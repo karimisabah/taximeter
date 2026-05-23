@@ -372,10 +372,11 @@ function onGPSOk(pos){
   const {latitude:la,longitude:ln,accuracy:ac,speed:sp} = pos.coords;
   const spKmh = sp ? sp*3.6 : 0;
   
-  // Accumulate distance
+  // Accumulate distance - only when moving faster than 3 km/h AND accuracy good enough
   if(S.running && !S.waiting && S.prevLat!==null){
     const d = haversine(S.prevLat,S.prevLng,la,ln);
-    if(d < 0.8) S.dist += d; // filter jumps
+    const minMove = Math.max(0.005, ac / 1000); // min movement = max(5m, accuracy)
+    if(d < 0.5 && d > minMove && spKmh > 3) S.dist += d;
   }
   
   S.lat=la; S.lng=ln; S.acc=ac; S.spd=spKmh;
@@ -514,16 +515,25 @@ function stopRide(){
 }
 
 function toggleWait(){
-  if(!S.running) return;
+  if(!S.running){
+    alert('ابتدا سفر را شروع کن!');
+    return;
+  }
   S.waiting=!S.waiting;
   const wb=document.getElementById('waitBtn');
   if(S.waiting){
-    wb.className='btn-sm wait-on'; wb.textContent='▶ ادامه';
+    wb.className='btn-sm wait-on';
+    wb.textContent='▶ ادامه سفر';
+    clearInterval(S.waitInt);
     S.waitInt=setInterval(()=>{S.waitSec++; updateFare()},1000);
-    log('⏸ انتظار شروع');
+    document.getElementById('fareDisp').className='fare-big waiting';
+    log('⏸ انتظار - 55zł/h');
   } else {
-    wb.className='btn-sm'; wb.textContent='⏸ انتظار';
-    clearInterval(S.waitInt); S.waitInt=null;
+    wb.className='btn-sm';
+    wb.textContent='⏸ انتظار';
+    clearInterval(S.waitInt);
+    S.waitInt=null;
+    document.getElementById('fareDisp').className='fare-big running';
     log('▶ ادامه سفر');
   }
 }
