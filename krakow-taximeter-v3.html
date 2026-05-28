@@ -40,6 +40,11 @@
   .speedbar>div{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--acc));
     border-radius:2px;transition:width .5s}
 
+  .mode{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:10px 16px;text-align:center;font-size:12px;font-weight:700;letter-spacing:1px}
+  .mode.moving{color:var(--green);border-color:rgba(0,255,136,.3)}
+  .mode.stopped{color:var(--acc2);border-color:rgba(255,107,53,.3)}
+
   .gps{background:var(--panel);border:1px solid var(--border);border-radius:14px;
     padding:12px 16px;display:flex;align-items:center;gap:12px}
   .gps .dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex-shrink:0}
@@ -61,15 +66,6 @@
   .tbtn .tn{font-size:13px;font-weight:700;color:var(--acc);margin-bottom:3px}
   .tbtn .td{font-size:9px;color:var(--muted);line-height:1.5}
   .tbtn .tp{font-size:15px;color:var(--green);margin-top:4px;font-weight:700}
-  .wait{display:flex;justify-content:space-between;align-items:center;margin-top:12px;
-    padding-top:10px;border-top:1px solid rgba(0,229,255,.08)}
-  .wait .wl{font-size:12px;color:var(--muted)}
-  .tog{width:44px;height:24px;background:var(--panel2);border:1px solid var(--border);
-    border-radius:12px;cursor:pointer;position:relative;transition:all .3s}
-  .tog.on{background:rgba(0,229,255,.2);border-color:var(--acc)}
-  .tog::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;
-    background:var(--muted);top:2px;right:2px;transition:all .3s}
-  .tog.on::after{right:22px;background:var(--acc)}
 
   .btn{width:100%;padding:18px;border-radius:16px;border:none;font-size:16px;font-weight:700;
     letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:all .2s;font-family:inherit}
@@ -111,6 +107,8 @@
   </div>
   <div class="speedbar"><div id="speedBar"></div></div>
 
+  <div class="mode" id="modeBox">— حالت سفر —</div>
+
   <div class="gps">
     <div class="dot" id="gpsDot"></div>
     <div class="info"><div class="s" id="gpsStatus">GPS آماده نیست</div>
@@ -130,10 +128,6 @@
       <div class="tbtn" id="t4" onclick="setTariff(4)"><div class="tn">تعرفه ۴</div>
         <div class="td">شب/یکشنبه/تعطیل · Strefa II</div><div class="tp">12.00 zł/km</div></div>
     </div>
-    <div class="wait">
-      <span class="wl">⏱ توقف / انتظار (55 zł/h)</span>
-      <div class="tog" id="waitTog" onclick="toggleWait()"></div>
-    </div>
   </div>
 
   <button class="btn start" id="mainBtn" onclick="toggleTrip()">▶ شروع سفر · START</button>
@@ -143,7 +137,7 @@
     <div class="title">جزئیات · SZCZEGÓŁY</div>
     <div class="row"><span class="rl">🚀 کرایه اولیه</span><span class="rv">9.00 zł</span></div>
     <div class="row"><span class="rl">📏 مسافت · za km</span><span class="rv" id="rDist">0.00 zł</span></div>
-    <div class="row"><span class="rl">⏱ انتظار · postój</span><span class="rv" id="rWait">0.00 zł</span></div>
+    <div class="row"><span class="rl">⏱ انتظار/توقف · postój</span><span class="rv" id="rWait">0.00 zł</span></div>
     <div class="row tot"><span class="rl">💰 جمع کل · Razem</span><span class="rv" id="rTot">9.00 zł</span></div>
   </div>
 </div>
@@ -154,9 +148,10 @@
 var TARIFFS={1:{name:"تعرفه ۱",rate:4.00},2:{name:"تعرفه ۲",rate:6.00},
   3:{name:"تعرفه ۳",rate:8.00},4:{name:"تعرفه ۴",rate:12.00}};
 var START_FEE=9.00, WAIT_PER_SEC=55/3600;
+var MOVE_THRESHOLD=6; // km/h — بالای این سرعت یعنی در حال حرکت
 
-var st={running:false,waiting:false,tariff:1,dist:0,distFare:0,waitFare:0,
-  elapsed:0,speed:0,lastPos:null,watchId:null,timer:null,waitTimer:null,wakeLock:null};
+var st={running:false,tariff:1,dist:0,distFare:0,waitFare:0,
+  elapsed:0,speed:0,lastPos:null,lastTime:null,watchId:null,timer:null,wakeLock:null};
 
 function $(id){return document.getElementById(id);}
 
@@ -184,9 +179,15 @@ function setTariff(n){
   update();
 }
 
+function setMode(moving){
+  var box=$("modeBox");
+  if(!st.running){box.className="mode";box.textContent="— حالت سفر —";return;}
+  if(moving){box.className="mode moving";box.textContent="🚗 در حرکت — محاسبه بر اساس مسافت";}
+  else{box.className="mode stopped";box.textContent="⏱ توقف — محاسبه بر اساس زمان";}
+}
+
 function setGps(state,status,detail,acc){
-  var dot=$("gpsDot");
-  dot.className="dot"+(state?" "+state:"");
+  $("gpsDot").className="dot"+(state?" "+state:"");
   $("gpsStatus").textContent=status;
   $("gpsDetail").textContent=detail||"";
   $("gpsAcc").textContent=acc||"";
@@ -232,24 +233,34 @@ async function requestWakeLock(){
 }
 function releaseWakeLock(){try{if(st.wakeLock){st.wakeLock.release();st.wakeLock=null;}}catch(e){}}
 
+function tick(){
+  st.elapsed++;
+  $("sTime").textContent=fmtTime(st.elapsed);
+  // فقط وقتی ماشین متوقف/خیلی کند است، کرایه زمان حساب شود
+  var moving=st.speed>=MOVE_THRESHOLD;
+  setMode(moving);
+  if(!moving){
+    st.waitFare+=WAIT_PER_SEC;
+    update();
+  }
+}
+
 function toggleTrip(){
   if(st.running){
-    st.running=false;st.waiting=false;
-    clearInterval(st.timer);clearInterval(st.waitTimer);
+    st.running=false;
+    clearInterval(st.timer);
     if(st.watchId!=null)navigator.geolocation.clearWatch(st.watchId);
     releaseWakeLock();
     $("mainBtn").className="btn start";
     $("mainBtn").textContent="▶ شروع سفر · START";
     $("amt").classList.remove("run");
-    $("waitTog").classList.remove("on");
+    setMode(false);
     toast("✓ سفر تمام شد · "+(START_FEE+st.distFare+st.waitFare).toFixed(2)+" zł");
   }else{
-    st.running=true;st.waiting=false;
+    st.running=true;
     st.dist=0;st.distFare=0;st.waitFare=0;st.elapsed=0;st.speed=0;st.lastPos=null;
     startGps();
-    st.timer=setInterval(function(){
-      st.elapsed++;$("sTime").textContent=fmtTime(st.elapsed);
-    },1000);
+    st.timer=setInterval(tick,1000);
     requestWakeLock();
     $("mainBtn").className="btn stop";
     $("mainBtn").textContent="■ توقف · STOP";
@@ -259,27 +270,13 @@ function toggleTrip(){
   }
 }
 
-function toggleWait(){
-  if(!st.running){toast("ابتدا سفر را شروع کنید");return;}
-  st.waiting=!st.waiting;
-  $("waitTog").classList.toggle("on",st.waiting);
-  if(st.waiting){
-    st.waitTimer=setInterval(function(){
-      st.waitFare+=WAIT_PER_SEC;update();
-    },1000);
-    toast("⏱ انتظار فعال · Postój aktywny");
-  }else{
-    clearInterval(st.waitTimer);
-    toast("✓ انتظار متوقف شد");
-  }
-}
-
 function resetTrip(){
   if(st.running){toast("ابتدا سفر را متوقف کنید");return;}
-  st.dist=0;st.distFare=0;st.waitFare=0;st.elapsed=0;st.speed=0;st.waiting=false;
+  st.dist=0;st.distFare=0;st.waitFare=0;st.elapsed=0;st.speed=0;
   $("sTime").textContent="00:00";$("sSpeed").textContent="0";
-  $("speedBar").style.width="0%";$("waitTog").classList.remove("on");
+  $("speedBar").style.width="0%";
   setGps("","GPS آماده نیست","برای شروع START را بزنید","");
+  setMode(false);
   update();toast("↺ ریست شد");
 }
 
