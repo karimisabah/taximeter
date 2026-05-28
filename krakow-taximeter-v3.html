@@ -1,413 +1,308 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#080b12">
-<title>Taksometr Kraków</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Vazirmatn:wght@300;400;600&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#05101f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>تاکسی‌متر کراکوف | Kraków Taximeter</title>
 <style>
-:root{--bg:#080b12;--panel:#0e1220;--card:#111827;--border:#1e2d45;
-  --accent:#00d4ff;--accent2:#ff6b35;--green:#00ff88;--yellow:#ffd700;
-  --red:#ff3355;--text:#cdd9f0;--dim:#3d5070}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{min-height:100%;background:var(--bg);font-family:'Vazirmatn',sans-serif;color:var(--text)}
-body{display:flex;flex-direction:column;align-items:center;padding:10px 10px 30px;
-  background-image:radial-gradient(ellipse at 50% 0%,rgba(0,212,255,.05) 0%,transparent 60%)}
-.app{width:100%;max-width:430px}
-.hdr{text-align:center;padding:12px 0 8px}
-.logo{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;letter-spacing:4px;
-  color:var(--accent);text-shadow:0 0 20px rgba(0,212,255,.5)}
-.hdr-sub{font-size:10px;letter-spacing:2px;color:var(--dim);margin-top:3px}
-.wake-bar{display:flex;align-items:center;gap:8px;background:var(--card);
-  border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:8px}
-.wake-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);flex-shrink:0}
-.wake-dot.on{background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 3s infinite}
-.wake-dot.off{background:var(--red)}
-.wake-txt{font-size:10px;color:var(--dim);flex:1}
-.wake-txt.on{color:var(--green)}
-.wake-txt.off{color:var(--red)}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
-.gps-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;
-  padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:all .3s}
-.dot.search{background:var(--yellow);box-shadow:0 0 8px var(--yellow);animation:blink .8s infinite}
-.dot.ok{background:var(--green);box-shadow:0 0 10px var(--green);animation:blink 2s infinite}
-.dot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
-.gps-info{flex:1}
-.gps-st{font-size:11px;color:var(--dim)}
-.gps-st.ok{color:var(--green)}
-.gps-st.err{color:var(--red)}
-.gps-coord{font-family:'Orbitron',monospace;font-size:9px;color:var(--dim);margin-top:2px}
-.acc{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid rgba(0,255,136,.3);
-  color:var(--green);background:rgba(0,255,136,.08);white-space:nowrap;display:none}
-.acc.poor{border-color:rgba(255,215,0,.3);color:var(--yellow);background:rgba(255,215,0,.08)}
-.mode-bar{display:flex;gap:8px;margin-bottom:8px}
-.mode-card{flex:1;background:var(--card);border:2px solid var(--border);
-  border-radius:12px;padding:10px;text-align:center;transition:all .3s}
-.mode-card.active-drive{border-color:var(--green);background:rgba(0,255,136,.08)}
-.mode-card.active-wait{border-color:var(--yellow);background:rgba(255,215,0,.08)}
-.mode-icon{font-size:20px;margin-bottom:2px}
-.mode-name{font-size:11px;font-weight:600;color:var(--dim)}
-.mode-card.active-drive .mode-name{color:var(--green)}
-.mode-card.active-wait .mode-name{color:var(--yellow)}
-.mode-val{font-family:'Orbitron',monospace;font-size:10px;color:var(--dim);margin-top:2px}
-.row2{display:flex;gap:8px;margin-bottom:8px}
-.zone-card,.time-card{background:var(--card);border:1px solid var(--border);
-  border-radius:12px;padding:10px;flex:1;text-align:center;transition:all .3s}
-.zone-card.z1{border-color:var(--accent);background:rgba(0,212,255,.06)}
-.zone-card.z2{border-color:var(--accent2);background:rgba(255,107,53,.06)}
-.clbl{font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:3px}
-.zone-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--dim)}
-.zone-card.z1 .zone-name{color:var(--accent)}
-.zone-card.z2 .zone-name{color:var(--accent2)}
-.zone-desc{font-size:9px;color:var(--dim);margin-top:2px}
-.clock{font-family:'Orbitron',monospace;font-size:15px;color:var(--text)}
-.shift{font-size:9px;color:var(--dim);margin-top:2px}
-.meter{background:var(--panel);border:1px solid var(--border);border-radius:16px;
-  overflow:hidden;margin-bottom:8px;position:relative}
-.meter::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.5}
-.screen{background:#04070f;padding:18px 16px 14px;border-bottom:1px solid var(--border);position:relative}
-.fare-lbl{font-size:8px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
-.fare-row{display:flex;align-items:baseline;gap:5px}
-.fare{font-family:'Orbitron',monospace;font-size:60px;font-weight:900;line-height:1;
-  letter-spacing:-2px;color:var(--accent);text-shadow:0 0 28px rgba(0,212,255,.4);transition:all .3s}
-.fare.drive{color:var(--green);text-shadow:0 0 28px rgba(0,255,136,.5)}
-.fare.wait{color:var(--yellow);text-shadow:0 0 28px rgba(255,215,0,.5)}
-.fare-zl{font-family:'Orbitron',monospace;font-size:22px;color:var(--dim)}
-.tbadge{position:absolute;top:14px;right:14px;background:rgba(0,212,255,.1);
-  border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:4px 10px;
-  font-size:10px;letter-spacing:2px;color:var(--accent);font-family:'Orbitron',monospace}
-.stats{display:grid;grid-template-columns:repeat(4,1fr)}
-.st{padding:10px 4px;border-right:1px solid var(--border);text-align:center}
-.st:last-child{border-right:none}
-.st-l{font-size:8px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin-bottom:3px}
-.st-v{font-family:'Orbitron',monospace;font-size:12px;color:var(--text)}
-.st-u{font-size:8px;color:var(--dim)}
-.spd-wrap{padding:8px 14px;border-bottom:1px solid var(--border)}
-.spd-row{display:flex;justify-content:space-between;margin-bottom:4px}
-.spd-l{font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
-.spd-v{font-family:'Orbitron',monospace;font-size:11px}
-.bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
-.bar-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--accent));
-  border-radius:2px;width:0%;transition:width .6s}
-.ctrl{padding:12px}
-.btn-main{width:100%;padding:16px;border:none;border-radius:12px;
-  font-family:'Orbitron',monospace;font-size:14px;font-weight:700;
-  letter-spacing:2px;cursor:pointer;transition:all .2s;margin-bottom:7px}
-.btn-go{background:linear-gradient(135deg,#006e3a,#00a855);color:#fff;
-  box-shadow:0 4px 20px rgba(0,168,85,.4)}
-.btn-stop{background:linear-gradient(135deg,#8a0020,#cc0033);color:#fff;
-  box-shadow:0 4px 20px rgba(204,0,51,.4);animation:ps 2s infinite}
-@keyframes ps{0%,100%{box-shadow:0 4px 20px rgba(204,0,51,.4)}50%{box-shadow:0 4px 30px rgba(204,0,51,.7)}}
-.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.btn-s{padding:11px;border:1px solid var(--border);border-radius:10px;
-  background:var(--card);color:var(--dim);font-family:'Vazirmatn',sans-serif;
-  font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
-.btn-s:hover{border-color:var(--accent);color:var(--text)}
-.trf{background:var(--card);border:1px solid var(--border);border-radius:14px;
-  margin-bottom:8px;overflow:hidden}
-.trf-h{padding:10px 14px;border-bottom:1px solid var(--border);
-  font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
-.tr{display:flex;justify-content:space-between;align-items:center;
-  padding:8px 14px;border-bottom:1px solid rgba(30,45,69,.4);transition:background .3s}
-.tr:last-child{border-bottom:none}
-.tr.on{background:rgba(0,212,255,.05)}
-.tr.on.z2{background:rgba(255,107,53,.05)}
-.tn{font-size:11px;color:var(--dim)}
-.tn strong{color:var(--text)}
-.tv{font-family:'Orbitron',monospace;font-size:11px;color:var(--dim)}
-.tr.on .tv{color:var(--accent)}
-.tr.on.z2 .tv{color:var(--accent2)}
-.td{width:6px;height:6px;border-radius:50%;background:transparent}
-.tr.on .td{background:var(--accent);box-shadow:0 0 5px var(--accent)}
-.tr.on.z2 .td{background:var(--accent2);box-shadow:0 0 5px var(--accent2)}
-.rcpt{background:var(--card);border:1px solid var(--border);border-radius:14px;
-  margin-bottom:8px;overflow:hidden;display:none}
-.rcpt.show{display:block}
-.rh{padding:11px 15px;border-bottom:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center}
-.rt{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:3px;color:var(--accent)}
-.rr{display:flex;justify-content:space-between;padding:8px 15px;
-  border-bottom:1px solid rgba(30,45,69,.3);font-size:12px}
-.rr:last-child{border-bottom:none}
-.rl{color:var(--dim)}
-.rv{font-family:'Orbitron',monospace;font-size:11px;color:var(--text)}
-.rtotal{padding:12px 15px;background:rgba(0,212,255,.05);border-top:1px solid var(--border);
-  display:flex;justify-content:space-between;align-items:center}
-.rtl{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--accent)}
-.rtv{font-family:'Orbitron',monospace;font-size:20px;color:var(--accent)}
+  :root{
+    --bg:#05101f;--panel:#0d1e35;--panel2:#112240;--acc:#00e5ff;--acc2:#ff6b35;
+    --green:#00ff88;--text:#e0f0ff;--muted:#4a6d8c;--border:rgba(0,229,255,.15);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);
+    min-height:100vh;overflow-x:hidden;user-select:none;direction:rtl}
+  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(0,229,255,.08),transparent 60%)}
+  .container{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:12px;
+    display:flex;flex-direction:column;gap:10px}
+  .header{text-align:center;padding:14px 0 6px}
+  .header h1{font-size:1rem;letter-spacing:2px;color:var(--acc);text-shadow:0 0 20px rgba(0,229,255,.4);
+    font-weight:700;text-transform:uppercase}
+  .header .sub{font-size:.7rem;color:var(--muted);margin-top:4px}
+
+  .fare{background:var(--panel);border:1px solid var(--border);border-radius:20px;
+    padding:24px 20px;text-align:center}
+  .fare .lbl{font-size:.65rem;color:var(--muted);letter-spacing:3px;margin-bottom:8px;text-transform:uppercase}
+  .fare .amt{font-size:min(72px,18vw);font-weight:900;color:var(--green);line-height:1;
+    text-shadow:0 0 20px rgba(0,255,136,.3);font-variant-numeric:tabular-nums;letter-spacing:-2px;transition:text-shadow .3s}
+  .fare .amt.run{text-shadow:0 0 40px rgba(0,255,136,.7),0 0 80px rgba(0,255,136,.3)}
+  .fare .cur{font-size:18px;color:var(--muted);margin-top:6px;letter-spacing:2px}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center}
+  .stat .v{font-size:22px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
+  .stat .l{font-size:9px;color:var(--muted);margin-top:4px}
+  .speedbar{height:4px;background:var(--panel2);border-radius:2px;overflow:hidden}
+  .speedbar>div{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--acc));
+    border-radius:2px;transition:width .5s}
+
+  .gps{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:12px 16px;display:flex;align-items:center;gap:12px}
+  .gps .dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex-shrink:0}
+  .gps .dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+  .gps .dot.searching{background:var(--acc2);box-shadow:0 0 8px var(--acc2);animation:pulse .8s infinite}
+  .gps .dot.error{background:#ff4444;box-shadow:0 0 8px #ff4444}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7}}
+  .gps .info{flex:1}
+  .gps .s{font-size:12px}.gps .d{font-size:10px;color:var(--muted);margin-top:2px}
+  .gps .ac{font-size:11px;color:var(--acc)}
+
+  .section{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
+  .section .title{font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tbtn{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;
+    cursor:pointer;transition:all .2s}
+  .tbtn:active{transform:scale(.97)}
+  .tbtn.active{border-color:var(--acc);background:rgba(0,229,255,.08);box-shadow:0 0 15px rgba(0,229,255,.15)}
+  .tbtn .tn{font-size:13px;font-weight:700;color:var(--acc);margin-bottom:3px}
+  .tbtn .td{font-size:9px;color:var(--muted);line-height:1.5}
+  .tbtn .tp{font-size:15px;color:var(--green);margin-top:4px;font-weight:700}
+  .wait{display:flex;justify-content:space-between;align-items:center;margin-top:12px;
+    padding-top:10px;border-top:1px solid rgba(0,229,255,.08)}
+  .wait .wl{font-size:12px;color:var(--muted)}
+  .tog{width:44px;height:24px;background:var(--panel2);border:1px solid var(--border);
+    border-radius:12px;cursor:pointer;position:relative;transition:all .3s}
+  .tog.on{background:rgba(0,229,255,.2);border-color:var(--acc)}
+  .tog::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;
+    background:var(--muted);top:2px;right:2px;transition:all .3s}
+  .tog.on::after{right:22px;background:var(--acc)}
+
+  .btn{width:100%;padding:18px;border-radius:16px;border:none;font-size:16px;font-weight:700;
+    letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:all .2s;font-family:inherit}
+  .btn:active{transform:scale(.98)}
+  .start{background:linear-gradient(135deg,#00c853,#00e676);color:#001a0a;box-shadow:0 4px 20px rgba(0,200,83,.4)}
+  .stop{background:linear-gradient(135deg,#ff3d00,#ff6e40);color:#fff;box-shadow:0 4px 20px rgba(255,61,0,.4)}
+  .reset{background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;padding:12px}
+
+  .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+  .row .rl{color:var(--muted)}.row .rv{color:var(--acc);font-weight:700}
+  .row.tot{font-size:14px;padding:10px 0 2px;border:none}
+  .row.tot .rl{color:var(--text);font-weight:700}
+  .row.tot .rv{color:var(--green);font-weight:900;font-size:16px}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--panel);border:1px solid var(--acc);border-radius:12px;padding:10px 20px;
+    font-size:13px;color:var(--acc);z-index:999;transition:transform .3s;white-space:nowrap;
+    box-shadow:0 0 20px rgba(0,229,255,.2)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
-<div class="app">
-<div class="hdr">
-  <div class="logo">KRAKÓW</div>
-  <div class="hdr-sub">تاکسی‌متر رسمی · Oficjalny Taksometr GPS</div>
-</div>
-<div class="wake-bar">
-  <div class="wake-dot" id="wakeDot"></div>
-  <div class="wake-txt" id="wakeTxt">صفحه: در انتظار شروع سفر</div>
-</div>
-<div class="gps-bar">
-  <div class="dot" id="dot"></div>
-  <div class="gps-info">
-    <div class="gps-st" id="gst">در انتظار GPS...</div>
-    <div class="gps-coord" id="gcoord">— / —</div>
+<div class="container">
+  <div class="header">
+    <h1>KRAKÓW TAXIMETER</h1>
+    <div class="sub">تاکسی‌متر رسمی کراکوف · Oficjalny taksometr</div>
   </div>
-  <div class="acc" id="acc"></div>
-</div>
-<div class="mode-bar">
-  <div class="mode-card" id="mDrive">
-    <div class="mode-icon">🚗</div>
-    <div class="mode-name">در حرکت</div>
-    <div class="mode-val" id="mDriveVal">0,000 km</div>
-  </div>
-  <div class="mode-card" id="mWait">
-    <div class="mode-icon">⏱</div>
-    <div class="mode-name">انتظار</div>
-    <div class="mode-val" id="mWaitVal">0 min</div>
-  </div>
-</div>
-<div class="row2">
-  <div class="zone-card" id="zcard">
-    <div class="clbl">منطقه · Strefa</div>
-    <div class="zone-name" id="zname">—</div>
-    <div class="zone-desc" id="zdesc">در انتظار GPS</div>
-  </div>
-  <div class="time-card">
-    <div class="clbl">ساعت · Czas</div>
-    <div class="clock" id="clk">--:--</div>
-    <div class="shift" id="shft">—</div>
-  </div>
-</div>
-<div class="meter">
-  <div class="screen">
-    <div class="fare-lbl">کرایه · Opłata</div>
-    <div class="fare-row">
-      <div class="fare" id="fare">9,00</div>
-      <div class="fare-zl">zł</div>
-    </div>
-    <div class="tbadge" id="tbadge">T1</div>
-  </div>
-  <div class="stats">
-    <div class="st"><div class="st-l">مسافت</div><div class="st-v" id="svDist">0.000<span class="st-u">km</span></div></div>
-    <div class="st"><div class="st-l">زمان کل</div><div class="st-v" id="svTime">00:00</div></div>
-    <div class="st"><div class="st-l">انتظار</div><div class="st-v" id="svWait">0<span class="st-u">m</span></div></div>
-    <div class="st"><div class="st-l">سرعت</div><div class="st-v" id="svSpd">0<span class="st-u">k/h</span></div></div>
-  </div>
-  <div class="spd-wrap">
-    <div class="spd-row">
-      <span class="spd-l">سرعت · Prędkość</span>
-      <span class="spd-v" id="spdTxt" style="color:var(--dim)">0 km/h</span>
-    </div>
-    <div class="bar"><div class="bar-fill" id="barFill"></div></div>
-  </div>
-  <div class="ctrl">
-    <button class="btn-main btn-go" id="mainBtn" onclick="toggleRide()">شروع سفر · ROZPOCZNIJ</button>
-    <div class="btn-row">
-      <button class="btn-s" onclick="resetAll()">↺ ریست</button>
-      <button class="btn-s" onclick="showReceipt()">🧾 رسید</button>
-    </div>
-  </div>
-</div>
-<div class="trf">
-  <div class="trf-h">تعرفه‌های مصوب · Taryfy Urzędowe</div>
-  <div class="tr" id="tr1"><span class="tn"><strong>T1</strong> روز · Strefa I (6-22h)</span><span class="tv">4,00 zł/km</span><span class="td"></span></div>
-  <div class="tr" id="tr2"><span class="tn"><strong>T2</strong> شب/یکشنبه · Strefa I</span><span class="tv">6,00 zł/km</span><span class="td"></span></div>
-  <div class="tr" id="tr3"><span class="tn"><strong>T3</strong> روز · Strefa II (6-22h)</span><span class="tv">8,00 zł/km</span><span class="td"></span></div>
-  <div class="tr" id="tr4"><span class="tn"><strong>T4</strong> شب/یکشنبه · Strefa II</span><span class="tv">12,00 zł/km</span><span class="td"></span></div>
-  <div class="tr"><span class="tn">شروع · Opłata startowa</span><span class="tv">9,00 zł</span><span class="td"></span></div>
-  <div class="tr"><span class="tn">انتظار · Postój (زیر 3 km/h)</span><span class="tv">55,00 zł/h</span><span class="td"></span></div>
-</div>
-<div class="rcpt" id="rcpt">
-  <div class="rh">
-    <span class="rt">PARAGON</span>
-    <span style="font-size:10px;color:var(--dim)" id="rTime"></span>
-  </div>
-  <div class="rr"><span class="rl">تعرفه</span><span class="rv" id="rTrf">—</span></div>
-  <div class="rr"><span class="rl">منطقه</span><span class="rv" id="rZone">—</span></div>
-  <div class="rr"><span class="rl">مسافت</span><span class="rv" id="rDist">—</span></div>
-  <div class="rr"><span class="rl">شروع · Start</span><span class="rv">9,00 zł</span></div>
-  <div class="rr"><span class="rl">کیلومتر</span><span class="rv" id="rKm">—</span></div>
-  <div class="rr"><span class="rl">انتظار · Postój</span><span class="rv" id="rWait">—</span></div>
-  <div class="rtotal">
-    <span class="rtl">RAZEM · جمع</span>
-    <span class="rtv" id="rTotal">—</span>
-  </div>
-</div>
-</div>
-<script>
-const BASE=9.00, WAIT_PER_SEC=55/3600, SPEED_THRESH=3;
-const RATES={1:{km:4.00,zone:'I'},2:{km:6.00,zone:'I'},3:{km:8.00,zone:'II'},4:{km:12.00,zone:'II'}};
-const ZONE1_LAT=50.0614, ZONE1_LNG=19.9372;
-let S={gpsOk:false,lat:null,lng:null,acc:null,speedKmh:0,zone:null,tariff:1,
-  prevLat:null,prevLng:null,prevTime:null,watchId:null,
-  running:false,distKm:0,waitSec:0,totalSec:0,timerInt:null,isDriving:false,wakeLock:null};
 
-function haversine(a,b,c,d){
-  const R=6371,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180;
-  const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)**2;
+  <div class="fare">
+    <div class="lbl">مبلغ کل · CAŁKOWITA OPŁATA</div>
+    <div class="amt" id="amt">0.00</div>
+    <div class="cur">PLN (zł)</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="sTime">00:00</div><div class="l">زمان · CZAS</div></div>
+    <div class="stat"><div class="v" id="sSpeed">0</div><div class="l">km/h · سرعت</div></div>
+    <div class="stat"><div class="v" id="sDist">0.00</div><div class="l">km · مسافت</div></div>
+  </div>
+  <div class="speedbar"><div id="speedBar"></div></div>
+
+  <div class="gps">
+    <div class="dot" id="gpsDot"></div>
+    <div class="info"><div class="s" id="gpsStatus">GPS آماده نیست</div>
+      <div class="d" id="gpsDetail">برای شروع START را بزنید</div></div>
+    <div class="ac" id="gpsAcc"></div>
+  </div>
+
+  <div class="section">
+    <div class="title">انتخاب تعرفه · WYBÓR TARYFY</div>
+    <div class="tgrid">
+      <div class="tbtn active" id="t1" onclick="setTariff(1)"><div class="tn">تعرفه ۱</div>
+        <div class="td">روزهای کاری ۶:۰۰–۲۲:۰۰ · Strefa I</div><div class="tp">4.00 zł/km</div></div>
+      <div class="tbtn" id="t2" onclick="setTariff(2)"><div class="tn">تعرفه ۲</div>
+        <div class="td">شب/یکشنبه/تعطیل · Strefa I</div><div class="tp">6.00 zł/km</div></div>
+      <div class="tbtn" id="t3" onclick="setTariff(3)"><div class="tn">تعرفه ۳</div>
+        <div class="td">روزهای کاری ۶:۰۰–۲۲:۰۰ · Strefa II</div><div class="tp">8.00 zł/km</div></div>
+      <div class="tbtn" id="t4" onclick="setTariff(4)"><div class="tn">تعرفه ۴</div>
+        <div class="td">شب/یکشنبه/تعطیل · Strefa II</div><div class="tp">12.00 zł/km</div></div>
+    </div>
+    <div class="wait">
+      <span class="wl">⏱ توقف / انتظار (55 zł/h)</span>
+      <div class="tog" id="waitTog" onclick="toggleWait()"></div>
+    </div>
+  </div>
+
+  <button class="btn start" id="mainBtn" onclick="toggleTrip()">▶ شروع سفر · START</button>
+  <button class="btn reset" onclick="resetTrip()">↺ ریست · RESET</button>
+
+  <div class="section">
+    <div class="title">جزئیات · SZCZEGÓŁY</div>
+    <div class="row"><span class="rl">🚀 کرایه اولیه</span><span class="rv">9.00 zł</span></div>
+    <div class="row"><span class="rl">📏 مسافت · za km</span><span class="rv" id="rDist">0.00 zł</span></div>
+    <div class="row"><span class="rl">⏱ انتظار · postój</span><span class="rv" id="rWait">0.00 zł</span></div>
+    <div class="row tot"><span class="rl">💰 جمع کل · Razem</span><span class="rv" id="rTot">9.00 zł</span></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+var TARIFFS={1:{name:"تعرفه ۱",rate:4.00},2:{name:"تعرفه ۲",rate:6.00},
+  3:{name:"تعرفه ۳",rate:8.00},4:{name:"تعرفه ۴",rate:12.00}};
+var START_FEE=9.00, WAIT_PER_SEC=55/3600;
+
+var st={running:false,waiting:false,tariff:1,dist:0,distFare:0,waitFare:0,
+  elapsed:0,speed:0,lastPos:null,watchId:null,timer:null,waitTimer:null,wakeLock:null};
+
+function $(id){return document.getElementById(id);}
+
+function toast(m){var t=$("toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2500);}
+
+function haversine(a1,o1,a2,o2){
+  var R=6371,dLat=(a2-a1)*Math.PI/180,dLon=(o2-o1)*Math.PI/180;
+  var x=Math.sin(dLat/2)*Math.sin(dLat/2)+
+    Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
   return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
-function detectZone(a,b){const d=haversine(a,b,ZONE1_LAT,ZONE1_LNG);return d<=7.5?'I':d<=25?'II':'outside'}
-function isNight(){const h=new Date().getHours(),d=new Date().getDay();return h<6||h>=22||d===0}
-function getTariff(z){const n=isNight();return z==='I'?(n?2:1):(n?4:3)}
-function fmt(n){return n.toFixed(2).replace('.',',')}
-function pad(n){return String(n).padStart(2,'0')}
+
+function fmtTime(s){
+  var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  function p(n){return(n<10?"0":"")+n;}
+  return h>0?h+":"+p(m)+":"+p(sec):p(m)+":"+p(sec);
+}
+
+function setTariff(n){
+  if(st.running){toast("در حین سفر تعرفه قابل تغییر نیست");return;}
+  st.tariff=n;
+  for(var i=1;i<=4;i++)$("t"+i).classList.toggle("active",i===n);
+  toast(TARIFFS[n].name+" · "+TARIFFS[n].rate.toFixed(2)+" zł/km");
+  update();
+}
+
+function setGps(state,status,detail,acc){
+  var dot=$("gpsDot");
+  dot.className="dot"+(state?" "+state:"");
+  $("gpsStatus").textContent=status;
+  $("gpsDetail").textContent=detail||"";
+  $("gpsAcc").textContent=acc||"";
+}
+
+function onPos(pos){
+  var c=pos.coords;
+  var kmh=c.speed&&c.speed>0?Math.round(c.speed*3.6):0;
+  st.speed=kmh;
+  $("sSpeed").textContent=kmh;
+  $("speedBar").style.width=Math.min(kmh/120*100,100)+"%";
+  setGps("active","✓ GPS فعال · aktywny",
+    c.latitude.toFixed(5)+", "+c.longitude.toFixed(5),"±"+Math.round(c.accuracy)+"m");
+
+  if(st.running && st.lastPos){
+    var d=haversine(st.lastPos.lat,st.lastPos.lng,c.latitude,c.longitude);
+    if(d>0.003 && d<0.8 && c.accuracy<50){
+      st.dist+=d;
+      st.distFare=st.dist*TARIFFS[st.tariff].rate;
+      update();
+    }
+  }
+  st.lastPos={lat:c.latitude,lng:c.longitude};
+}
+
+function onErr(e){
+  var msg="خطای GPS";
+  if(e.code===1)msg="✗ دسترسی GPS رد شد · Allow بزنید";
+  else if(e.code===2)msg="✗ موقعیت در دسترس نیست";
+  else if(e.code===3)msg="✗ GPS timeout";
+  setGps("error",msg,"GPS گوشی را روشن کنید");
+}
+
+function startGps(){
+  if(!navigator.geolocation){setGps("error","✗ GPS پشتیبانی نمی‌شود","");return;}
+  setGps("searching","⟳ دریافت موقعیت...","در حال یافتن سیگنال GPS");
+  st.watchId=navigator.geolocation.watchPosition(onPos,onErr,
+    {enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
 
 async function requestWakeLock(){
-  if(!('wakeLock' in navigator)){setWakeUI(false,'WakeLock پشتیبانی نمی‌شود');return}
-  try{
-    S.wakeLock=await navigator.wakeLock.request('screen');
-    setWakeUI(true,'صفحه روشن می‌ماند ✓');
-    S.wakeLock.addEventListener('release',()=>setWakeUI(false,'WakeLock آزاد شد'));
-  }catch(e){setWakeUI(false,'صفحه نتوانست روشن بماند')}
+  try{if("wakeLock" in navigator)st.wakeLock=await navigator.wakeLock.request("screen");}catch(e){}
 }
-async function releaseWakeLock(){
-  if(S.wakeLock){await S.wakeLock.release();S.wakeLock=null}
-  setWakeUI(false,'صفحه آزاد شد');
+function releaseWakeLock(){try{if(st.wakeLock){st.wakeLock.release();st.wakeLock=null;}}catch(e){}}
+
+function toggleTrip(){
+  if(st.running){
+    st.running=false;st.waiting=false;
+    clearInterval(st.timer);clearInterval(st.waitTimer);
+    if(st.watchId!=null)navigator.geolocation.clearWatch(st.watchId);
+    releaseWakeLock();
+    $("mainBtn").className="btn start";
+    $("mainBtn").textContent="▶ شروع سفر · START";
+    $("amt").classList.remove("run");
+    $("waitTog").classList.remove("on");
+    toast("✓ سفر تمام شد · "+(START_FEE+st.distFare+st.waitFare).toFixed(2)+" zł");
+  }else{
+    st.running=true;st.waiting=false;
+    st.dist=0;st.distFare=0;st.waitFare=0;st.elapsed=0;st.speed=0;st.lastPos=null;
+    startGps();
+    st.timer=setInterval(function(){
+      st.elapsed++;$("sTime").textContent=fmtTime(st.elapsed);
+    },1000);
+    requestWakeLock();
+    $("mainBtn").className="btn stop";
+    $("mainBtn").textContent="■ توقف · STOP";
+    $("amt").classList.add("run");
+    toast("▶ سفر آغاز شد · rozpoczęty");
+    update();
+  }
 }
-document.addEventListener('visibilitychange',async()=>{
-  if(document.visibilityState==='visible'&&S.running&&!S.wakeLock) await requestWakeLock();
+
+function toggleWait(){
+  if(!st.running){toast("ابتدا سفر را شروع کنید");return;}
+  st.waiting=!st.waiting;
+  $("waitTog").classList.toggle("on",st.waiting);
+  if(st.waiting){
+    st.waitTimer=setInterval(function(){
+      st.waitFare+=WAIT_PER_SEC;update();
+    },1000);
+    toast("⏱ انتظار فعال · Postój aktywny");
+  }else{
+    clearInterval(st.waitTimer);
+    toast("✓ انتظار متوقف شد");
+  }
+}
+
+function resetTrip(){
+  if(st.running){toast("ابتدا سفر را متوقف کنید");return;}
+  st.dist=0;st.distFare=0;st.waitFare=0;st.elapsed=0;st.speed=0;st.waiting=false;
+  $("sTime").textContent="00:00";$("sSpeed").textContent="0";
+  $("speedBar").style.width="0%";$("waitTog").classList.remove("on");
+  setGps("","GPS آماده نیست","برای شروع START را بزنید","");
+  update();toast("↺ ریست شد");
+}
+
+function update(){
+  var total=START_FEE+st.distFare+st.waitFare;
+  $("amt").textContent=total.toFixed(2);
+  $("sDist").textContent=st.dist.toFixed(2);
+  $("rDist").textContent=st.distFare.toFixed(2)+" zł";
+  $("rWait").textContent=st.waitFare.toFixed(2)+" zł";
+  $("rTot").textContent=total.toFixed(2)+" zł";
+}
+
+(function(){
+  var now=new Date(),h=now.getHours(),day=now.getDay();
+  var night=h<6||h>=22, sunday=day===0;
+  if(night||sunday){setTimeout(function(){toast("💡 شب/تعطیل: تعرفه ۲ یا ۴ مناسب است");},800);}
+})();
+
+document.addEventListener("visibilitychange",function(){
+  if(st.running&&document.visibilityState==="visible")requestWakeLock();
 });
-function setWakeUI(on,msg){
-  document.getElementById('wakeDot').className='wake-dot '+(on?'on':'off');
-  const el=document.getElementById('wakeTxt');
-  el.className='wake-txt '+(on?'on':'off');el.textContent=msg;
-}
 
-function startGPS(){
-  if(!navigator.geolocation){setDot('err');document.getElementById('gst').textContent='GPS پشتیبانی نمی‌شود';return}
-  setDot('search');document.getElementById('gst').textContent='جستجوی GPS...';
-  if(S.watchId!==null)navigator.geolocation.clearWatch(S.watchId);
-  S.watchId=navigator.geolocation.watchPosition(onGPSOk,onGPSErr,{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
-}
-
-function onGPSOk(pos){
-  const la=pos.coords.latitude,ln=pos.coords.longitude,ac=pos.coords.accuracy,now=pos.timestamp;
-  let spd=0;
-  if(pos.coords.speed!=null&&pos.coords.speed>=0){
-    spd=pos.coords.speed*3.6;
-  }else if(S.prevLat!==null&&S.prevTime!==null){
-    const dm=haversine(S.prevLat,S.prevLng,la,ln)*1000;
-    const ts=(now-S.prevTime)/1000;
-    if(ts>0)spd=(dm/ts)*3.6;
-  }
-  if(S.running&&S.prevLat!==null){
-    const d=haversine(S.prevLat,S.prevLng,la,ln);
-    if(d<0.5&&spd>SPEED_THRESH)S.distKm+=d;
-  }
-  S.lat=la;S.lng=ln;S.acc=ac;S.speedKmh=spd;
-  S.prevLat=la;S.prevLng=ln;S.prevTime=now;S.gpsOk=true;
-  S.zone=detectZone(la,ln);S.tariff=getTariff(S.zone);
-  S.isDriving=(spd>SPEED_THRESH);
-  updateGPSUI(la,ln,ac,spd);updateZoneUI();updateTariffUI();updateModeUI();updateFareUI();
-}
-
-function onGPSErr(err){
-  setDot('err');
-  const msgs={1:'دسترسی رد شد',2:'موقعیت یافت نشد',3:'GPS timeout'};
-  const el=document.getElementById('gst');el.className='gps-st err';
-  el.textContent=msgs[err.code]||'خطای GPS';
-  if(err.code!==1)setTimeout(startGPS,5000);
-}
-function setDot(s){document.getElementById('dot').className='dot '+s}
-
-function updateGPSUI(la,ln,ac,spd){
-  setDot('ok');const el=document.getElementById('gst');
-  el.className='gps-st ok';el.textContent='GPS فعال · Active';
-  document.getElementById('gcoord').textContent=la.toFixed(5)+' / '+ln.toFixed(5);
-  const pill=document.getElementById('acc');pill.style.display='';
-  pill.textContent='±'+Math.round(ac)+'m';pill.className='acc'+(ac>30?' poor':'');
-  const sk=Math.round(spd);
-  document.getElementById('svSpd').innerHTML=sk+'<span class="st-u">k/h</span>';
-  document.getElementById('spdTxt').textContent=sk+' km/h';
-  document.getElementById('spdTxt').style.color=spd>SPEED_THRESH?'var(--green)':'var(--yellow)';
-  document.getElementById('barFill').style.width=Math.min(sk/120*100,100)+'%';
-}
-function updateZoneUI(){
-  const z=S.zone;
-  document.getElementById('zcard').className='zone-card'+(z==='I'?' z1':z==='II'?' z2':'');
-  document.getElementById('zname').textContent=z==='I'?'STREFA I':z==='II'?'STREFA II':'OUTSIDE';
-  document.getElementById('zdesc').textContent=z==='I'?'داخل شهر · Centrum':z==='II'?'حومه · Obrzeża':'خارج کراکوف';
-}
-function updateTariffUI(){
-  [1,2,3,4].forEach(i=>document.getElementById('tr'+i).className='tr'+(i===S.tariff?' on'+(S.zone==='II'?' z2':''):''));
-  document.getElementById('tbadge').textContent='T'+S.tariff;
-}
-function updateModeUI(){
-  const md=document.getElementById('mDrive'),mw=document.getElementById('mWait');
-  document.getElementById('mDriveVal').textContent=S.distKm.toFixed(3)+' km';
-  document.getElementById('mWaitVal').textContent=Math.floor(S.waitSec/60)+' min';
-  if(!S.running){md.className='mode-card';mw.className='mode-card';return}
-  md.className='mode-card'+(S.isDriving?' active-drive':'');
-  mw.className='mode-card'+(!S.isDriving?' active-wait':'');
-}
-function getFare(){return BASE+S.distKm*RATES[S.tariff].km+S.waitSec*WAIT_PER_SEC}
-function updateFareUI(){
-  const el=document.getElementById('fare');el.textContent=fmt(getFare());
-  el.className='fare'+(S.running?(S.isDriving?' drive':' wait'):'');
-  document.getElementById('svDist').innerHTML=S.distKm.toFixed(3)+'<span class="st-u">km</span>';
-  document.getElementById('svWait').innerHTML=Math.floor(S.waitSec/60)+'<span class="st-u">m</span>';
-}
-function updateClock(){
-  const now=new Date();
-  document.getElementById('clk').textContent=now.toTimeString().slice(0,5);
-  const days=['یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه','شنبه'];
-  document.getElementById('shft').textContent=(isNight()?'🌙 شب':'☀️ روز')+' · '+days[now.getDay()];
-}
-function toggleRide(){
-  if(!S.gpsOk){if(!confirm('GPS فعال نیست.\nادامه می‌دهید؟'))return}
-  S.running?stopRide():startRide();
-}
-async function startRide(){
-  S.running=true;S.distKm=0;S.waitSec=0;S.totalSec=0;
-  S.prevLat=S.lat;S.prevLng=S.lng;S.prevTime=Date.now();
-  const btn=document.getElementById('mainBtn');
-  btn.className='btn-main btn-stop';btn.textContent='پایان سفر · ZAKOŃCZ';
-  await requestWakeLock();
-  S.timerInt=setInterval(()=>{
-    S.totalSec++;
-    if(S.running&&!S.isDriving)S.waitSec++;
-    const m=Math.floor(S.totalSec/60),s=S.totalSec%60;
-    document.getElementById('svTime').textContent=pad(m)+':'+pad(s);
-    updateFareUI();updateModeUI();
-  },1000);
-}
-async function stopRide(){
-  S.running=false;S.isDriving=false;clearInterval(S.timerInt);S.timerInt=null;
-  const btn=document.getElementById('mainBtn');
-  btn.className='btn-main btn-go';btn.textContent='شروع سفر · ROZPOCZNIJ';
-  document.getElementById('fare').className='fare';
-  document.getElementById('mDrive').className='mode-card';
-  document.getElementById('mWait').className='mode-card';
-  await releaseWakeLock();updateFareUI();
-}
-function resetAll(){
-  if(S.running)stopRide();
-  S.distKm=0;S.waitSec=0;S.totalSec=0;
-  document.getElementById('svTime').textContent='00:00';
-  document.getElementById('rcpt').classList.remove('show');
-  updateFareUI();updateModeUI();
-}
-function showReceipt(){
-  const f=getFare(),kmFee=S.distKm*RATES[S.tariff].km,wFee=S.waitSec*WAIT_PER_SEC,now=new Date();
-  document.getElementById('rTime').textContent=now.toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'});
-  document.getElementById('rTrf').textContent='T'+S.tariff+' ('+RATES[S.tariff].km+',00 zł/km)';
-  document.getElementById('rZone').textContent='Strefa '+(S.zone||'?');
-  document.getElementById('rDist').textContent=S.distKm.toFixed(3)+' km';
-  document.getElementById('rKm').textContent=fmt(kmFee)+' zł';
-  document.getElementById('rWait').textContent=S.waitSec>0?Math.floor(S.waitSec/60)+' min → '+fmt(wFee)+' zł':'—';
-  document.getElementById('rTotal').textContent=fmt(f)+' zł';
-  const r=document.getElementById('rcpt');r.classList.add('show');
-  r.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-updateClock();
-setInterval(updateClock,10000);
-setInterval(()=>{if(S.zone){S.tariff=getTariff(S.zone);updateTariffUI()}},60000);
-startGPS();
+update();
 </script>
 </body>
 </html>
