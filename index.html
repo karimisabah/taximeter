@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#05101f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Kraków Taximeter</title>
+<style>
+  :root{
+    --bg:#05101f;--panel:#0d1e35;--panel2:#112240;--acc:#00e5ff;--acc2:#ff6b35;
+    --green:#00ff88;--text:#e0f0ff;--muted:#4a6d8c;--border:rgba(0,229,255,.15);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);
+    min-height:100vh;overflow-x:hidden;user-select:none}
+  body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(0,229,255,.08),transparent 60%)}
+  .container{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:12px;
+    display:flex;flex-direction:column;gap:10px}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 4px 0}
+  .lang{display:flex;gap:6px}
+  .lang button{background:var(--panel2);border:1px solid var(--border);color:var(--muted);
+    border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .lang button.active{background:rgba(0,229,255,.1);border-color:var(--acc);color:var(--acc)}
+
+  .header{text-align:center;padding:6px 0}
+  .header h1{font-size:1rem;letter-spacing:2px;color:var(--acc);text-shadow:0 0 20px rgba(0,229,255,.4);
+    font-weight:700;text-transform:uppercase}
+  .header .sub{font-size:.7rem;color:var(--muted);margin-top:4px}
+
+  .fare{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:24px 20px;text-align:center}
+  .fare .lbl{font-size:.65rem;color:var(--muted);letter-spacing:3px;margin-bottom:8px;text-transform:uppercase}
+  .fare .amt{font-size:min(72px,18vw);font-weight:900;color:var(--green);line-height:1;
+    text-shadow:0 0 20px rgba(0,255,136,.3);font-variant-numeric:tabular-nums;letter-spacing:-2px;transition:text-shadow .3s}
+  .fare .amt.run{text-shadow:0 0 40px rgba(0,255,136,.7),0 0 80px rgba(0,255,136,.3)}
+  .fare .cur{font-size:18px;color:var(--muted);margin-top:6px;letter-spacing:2px}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center}
+  .stat .v{font-size:22px;font-weight:700;color:var(--acc);font-variant-numeric:tabular-nums}
+  .stat .l{font-size:9px;color:var(--muted);margin-top:4px}
+  .speedbar{height:4px;background:var(--panel2);border-radius:2px;overflow:hidden}
+  .speedbar>div{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--acc));border-radius:2px;transition:width .5s}
+
+  .mode{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:10px 16px;text-align:center;font-size:12px;font-weight:700;letter-spacing:1px}
+  .mode.moving{color:var(--green);border-color:rgba(0,255,136,.3)}
+  .mode.stopped{color:var(--acc2);border-color:rgba(255,107,53,.3)}
+
+  .gps{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+  .gps .dot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex-shrink:0}
+  .gps .dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+  .gps .dot.searching{background:var(--acc2);box-shadow:0 0 8px var(--acc2);animation:pulse .8s infinite}
+  .gps .dot.error{background:#ff4444;box-shadow:0 0 8px #ff4444}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7}}
+  .gps .info{flex:1}
+  .gps .s{font-size:12px}.gps .d{font-size:10px;color:var(--muted);margin-top:2px}
+  .gps .ac{font-size:11px;color:var(--acc)}
+
+  .section{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px}
+  .section .title{font-size:9px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tbtn{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;cursor:pointer;transition:all .2s}
+  .tbtn:active{transform:scale(.97)}
+  .tbtn.active{border-color:var(--acc);background:rgba(0,229,255,.08);box-shadow:0 0 15px rgba(0,229,255,.15)}
+  .tbtn .tn{font-size:13px;font-weight:700;color:var(--acc);margin-bottom:3px}
+  .tbtn .td{font-size:9px;color:var(--muted);line-height:1.5}
+  .tbtn .tp{font-size:15px;color:var(--green);margin-top:4px;font-weight:700}
+
+  .btn{width:100%;padding:18px;border-radius:16px;border:none;font-size:16px;font-weight:700;
+    letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:all .2s;font-family:inherit}
+  .btn:active{transform:scale(.98)}
+  .start{background:linear-gradient(135deg,#00c853,#00e676);color:#001a0a;box-shadow:0 4px 20px rgba(0,200,83,.4)}
+  .stop{background:linear-gradient(135deg,#ff3d00,#ff6e40);color:#fff;box-shadow:0 4px 20px rgba(255,61,0,.4)}
+  .reset{background:var(--panel2);border:1px solid var(--border);color:var(--muted);font-size:13px;padding:12px}
+
+  .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+  .row .rl{color:var(--muted)}.row .rv{color:var(--acc);font-weight:700}
+  .row.tot{font-size:14px;padding:10px 0 2px;border:none}
+  .row.tot .rl{color:var(--text);font-weight:700}
+  .row.tot .rv{color:var(--green);font-weight:900;font-size:16px}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--panel);border:1px solid var(--acc);border-radius:12px;padding:10px 20px;
+    font-size:13px;color:var(--acc);z-index:999;transition:transform .3s;white-space:nowrap;box-shadow:0 0 20px rgba(0,229,255,.2)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="topbar">
+    <div class="lang">
+      <button id="langEN" class="active" onclick="setLang('en')">EN</button>
+      <button id="langPL" onclick="setLang('pl')">PL</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted)" id="bgNote"></div>
+  </div>
+
+  <div class="header">
+    <h1>KRAKÓW TAXIMETER</h1>
+    <div class="sub" id="subTitle">Official Kraków taximeter</div>
+  </div>
+
+  <div class="fare">
+    <div class="lbl" id="fareLbl">TOTAL FARE</div>
+    <div class="amt" id="amt">0.00</div>
+    <div class="cur">PLN (zł)</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="sDist">0.00</div><div class="l" id="lblDist">km · DISTANCE</div></div>
+    <div class="stat"><div class="v" id="sSpeed">0</div><div class="l" id="lblSpeed">km/h · SPEED</div></div>
+    <div class="stat"><div class="v" id="sTime">00:00</div><div class="l" id="lblTime">TIME</div></div>
+  </div>
+  <div class="speedbar"><div id="speedBar"></div></div>
+
+  <div class="mode" id="modeBox">— READY —</div>
+
+  <div class="gps">
+    <div class="dot" id="gpsDot"></div>
+    <div class="info"><div class="s" id="gpsStatus">GPS not ready</div>
+      <div class="d" id="gpsDetail">Press START to begin</div></div>
+    <div class="ac" id="gpsAcc"></div>
+  </div>
+
+  <div class="section">
+    <div class="title" id="tariffTitle">SELECT TARIFF</div>
+    <div class="tgrid">
+      <div class="tbtn active" id="t1" onclick="setTariff(1)"><div class="tn" id="t1n">Tariff 1</div>
+        <div class="td" id="t1d">Weekdays 6:00–22:00 · Zone I</div><div class="tp">4.00 zł/km</div></div>
+      <div class="tbtn" id="t2" onclick="setTariff(2)"><div class="tn" id="t2n">Tariff 2</div>
+        <div class="td" id="t2d">Night/Sun/Holiday · Zone I</div><div class="tp">6.00 zł/km</div></div>
+      <div class="tbtn" id="t3" onclick="setTariff(3)"><div class="tn" id="t3n">Tariff 3</div>
+        <div class="td" id="t3d">Weekdays 6:00–22:00 · Zone II</div><div class="tp">8.00 zł/km</div></div>
+      <div class="tbtn" id="t4" onclick="setTariff(4)"><div class="tn" id="t4n">Tariff 4</div>
+        <div class="td" id="t4d">Night/Sun/Holiday · Zone II</div><div class="tp">12.00 zł/km</div></div>
+    </div>
+  </div>
+
+  <button class="btn start" id="mainBtn" onclick="toggleTrip()">▶ START</button>
+  <button class="btn reset" id="resetBtn" onclick="resetTrip()">↺ RESET</button>
+
+  <div class="section">
+    <div class="title" id="detailsTitle">DETAILS</div>
+    <div class="row"><span class="rl" id="rStartLbl">🚀 Start fee</span><span class="rv">9.00 zł</span></div>
+    <div class="row"><span class="rl" id="rDistLbl">📏 Distance · per km</span><span class="rv" id="rDist">0.00 zł</span></div>
+    <div class="row"><span class="rl" id="rWaitLbl">⏱ Waiting · postój</span><span class="rv" id="rWait">0.00 zł</span></div>
+    <div class="row tot"><span class="rl" id="rTotLbl">💰 Total</span><span class="rv" id="rTot">9.00 zł</span></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ===== Translations EN / PL ===== */
+var L={
+  en:{
+    sub:"Official Kraków taximeter", fareLbl:"TOTAL FARE",
+    dist:"km · DISTANCE", speed:"km/h · SPEED", time:"TIME",
+    ready:"— READY —", moving:"🚗 MOVING — distance billing",
+    stopped:"⏱ STOPPED — waiting billing",
+    gpsNotReady:"GPS not ready", gpsPress:"Press START to begin",
+    gpsActive:"✓ GPS active", gpsSearch:"⟳ Acquiring location...",
+    gpsSearchD:"Searching for GPS signal", gpsDenied:"✗ GPS denied · allow location",
+    gpsUnavail:"✗ Location unavailable", gpsTimeout:"✗ GPS timeout",
+    gpsOn:"Turn on phone GPS", gpsNoSupport:"✗ GPS not supported",
+    tariffTitle:"SELECT TARIFF", detailsTitle:"DETAILS",
+    t:["Tariff 1","Tariff 2","Tariff 3","Tariff 4"],
+    td:["Weekdays 6:00–22:00 · Zone I","Night/Sun/Holiday · Zone I","Weekdays 6:00–22:00 · Zone II","Night/Sun/Holiday · Zone II"],
+    start:"▶ START", stop:"■ STOP", reset:"↺ RESET",
+    rStart:"🚀 Start fee", rDist:"📏 Distance · per km", rWait:"⏱ Waiting · postój", rTot:"💰 Total",
+    started:"▶ Trip started", ended:"✓ Trip ended ·", resetMsg:"↺ Reset done",
+    tariffLocked:"Cannot change tariff during trip", stopFirst:"Stop the trip first",
+    bgNote:"Keep this tab open", selected:"selected",
+    movingShort:"🚗 MOVING — ", kmRate:" zł/km", stoppedShort:"⏱ STOPPED — 55 zł/h"
+  },
+  pl:{
+    sub:"Oficjalny taksometr Krakowa", fareLbl:"CAŁKOWITA OPŁATA",
+    dist:"km · ODLEGŁOŚĆ", speed:"km/h · PRĘDKOŚĆ", time:"CZAS",
+    ready:"— GOTOWY —", moving:"🚗 JAZDA — opłata za odległość",
+    stopped:"⏱ POSTÓJ — opłata za czas",
+    gpsNotReady:"GPS niegotowy", gpsPress:"Naciśnij START",
+    gpsActive:"✓ GPS aktywny", gpsSearch:"⟳ Pobieranie lokalizacji...",
+    gpsSearchD:"Wyszukiwanie sygnału GPS", gpsDenied:"✗ Brak dostępu · zezwól na lokalizację",
+    gpsUnavail:"✗ Lokalizacja niedostępna", gpsTimeout:"✗ Przekroczono czas GPS",
+    gpsOn:"Włącz GPS w telefonie", gpsNoSupport:"✗ GPS nieobsługiwany",
+    tariffTitle:"WYBÓR TARYFY", detailsTitle:"SZCZEGÓŁY",
+    t:["Taryfa 1","Taryfa 2","Taryfa 3","Taryfa 4"],
+    td:["Dni robocze 6:00–22:00 · Strefa I","Noc/Niedz./Święta · Strefa I","Dni robocze 6:00–22:00 · Strefa II","Noc/Niedz./Święta · Strefa II"],
+    start:"▶ START", stop:"■ STOP", reset:"↺ RESETUJ",
+    rStart:"🚀 Opłata startowa", rDist:"📏 Odległość · za km", rWait:"⏱ Postój", rTot:"💰 Razem",
+    started:"▶ Przejazd rozpoczęty", ended:"✓ Przejazd zakończony ·", resetMsg:"↺ Zresetowano",
+    tariffLocked:"Nie można zmienić taryfy w trakcie", stopFirst:"Najpierw zatrzymaj przejazd",
+    bgNote:"Pozostaw tę kartę otwartą", selected:"wybrano",
+    movingShort:"🚗 JAZDA — ", kmRate:" zł/km", stoppedShort:"⏱ POSTÓJ — 55 zł/h"
+  }
+};
+var lang="en";
+
+var TARIFFS={1:{rate:4.00},2:{rate:6.00},3:{rate:8.00},4:{rate:12.00}};
+var START_FEE=9.00, WAIT_PER_SEC=55/3600;
+var MOVE_THRESHOLD=6;
+
+var st={running:false,tariff:1,dist:0,distFare:0,waitFare:0,
+  elapsed:0,speed:0,lastPos:null,lastFixTime:0,watchId:null,timer:null,wakeLock:null,
+  startTimestamp:0, lastTickTime:0};
+
+function $(id){return document.getElementById(id);}
+function T(){return L[lang];}
+
+function toast(m){var t=$("toast");t.textContent=m;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2500);}
+
+function haversine(a1,o1,a2,o2){
+  var R=6371,dLat=(a2-a1)*Math.PI/180,dLon=(o2-o1)*Math.PI/180;
+  var x=Math.sin(dLat/2)*Math.sin(dLat/2)+
+    Math.cos(a1*Math.PI/180)*Math.cos(a2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function fmtTime(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  function p(n){return(n<10?"0":"")+n;}return h>0?h+":"+p(m)+":"+p(sec):p(m)+":"+p(sec);}
+
+function setLang(l){
+  lang=l;
+  $("langEN").classList.toggle("active",l==="en");
+  $("langPL").classList.toggle("active",l==="pl");
+  var t=T();
+  $("subTitle").textContent=t.sub;
+  $("fareLbl").textContent=t.fareLbl;
+  $("lblDist").textContent=t.dist;
+  $("lblSpeed").textContent=t.speed;
+  $("lblTime").textContent=t.time;
+  $("tariffTitle").textContent=t.tariffTitle;
+  $("detailsTitle").textContent=t.detailsTitle;
+  $("resetBtn").textContent=t.reset;
+  $("rStartLbl").textContent=t.rStart;
+  $("rDistLbl").textContent=t.rDist;
+  $("rWaitLbl").textContent=t.rWait;
+  $("rTotLbl").textContent=t.rTot;
+  $("bgNote").textContent=t.bgNote;
+  for(var i=1;i<=4;i++){$("t"+i+"n").textContent=t.t[i-1];$("t"+i+"d").textContent=t.td[i-1];}
+  $("mainBtn").textContent=st.running?t.stop:t.start;
+  if(!st.running){$("gpsStatus").textContent=t.gpsNotReady;$("gpsDetail").textContent=t.gpsPress;}
+  setMode(st.speed>=MOVE_THRESHOLD);
+  document.documentElement.lang=l;
+}
+
+function setTariff(n){
+  if(st.running){toast(T().tariffLocked);return;}
+  st.tariff=n;
+  for(var i=1;i<=4;i++)$("t"+i).classList.toggle("active",i===n);
+  toast(T().t[n-1]+" · "+TARIFFS[n].rate.toFixed(2)+" zł/km");
+  update();
+}
+
+function setMode(moving){
+  var box=$("modeBox"),t=T();
+  if(!st.running){box.className="mode";box.textContent=t.ready;return;}
+  if(moving){box.className="mode moving";box.textContent=t.movingShort+TARIFFS[st.tariff].rate.toFixed(2)+t.kmRate;}
+  else{box.className="mode stopped";box.textContent=t.stoppedShort;}
+}
+
+function setGps(state,status,detail,acc){
+  $("gpsDot").className="dot"+(state?" "+state:"");
+  $("gpsStatus").textContent=status;
+  $("gpsDetail").textContent=detail||"";
+  $("gpsAcc").textContent=acc||"";
+}
+
+function onPos(pos){
+  var c=pos.coords,t=T();
+  st.lastFixTime=Date.now();
+  var movedDist=0;
+  if(st.lastPos)movedDist=haversine(st.lastPos.lat,st.lastPos.lng,c.latitude,c.longitude);
+  var kmh=(c.speed!=null&&c.speed>=0)?Math.round(c.speed*3.6):0;
+  st.speed=kmh;
+  $("sSpeed").textContent=kmh;
+  $("speedBar").style.width=Math.min(kmh/120*100,100)+"%";
+  setGps("active",t.gpsActive,c.latitude.toFixed(5)+", "+c.longitude.toFixed(5),"±"+Math.round(c.accuracy)+"m");
+  if(st.running&&st.lastPos&&movedDist>0.004&&movedDist<0.8&&c.accuracy<40){
+    st.dist+=movedDist;
+    st.distFare=st.dist*TARIFFS[st.tariff].rate;
+    update();
+  }
+  st.lastPos={lat:c.latitude,lng:c.longitude};
+}
+
+function onErr(e){
+  var t=T(),msg=t.gpsTimeout;
+  if(e.code===1)msg=t.gpsDenied;
+  else if(e.code===2)msg=t.gpsUnavail;
+  setGps("error",msg,t.gpsOn);
+}
+
+function startGps(){
+  var t=T();
+  if(!navigator.geolocation){setGps("error",t.gpsNoSupport,"");return;}
+  setGps("searching",t.gpsSearch,t.gpsSearchD);
+  st.watchId=navigator.geolocation.watchPosition(onPos,onErr,
+    {enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
+
+async function requestWakeLock(){
+  try{
+    if("wakeLock" in navigator){
+      st.wakeLock=await navigator.wakeLock.request("screen");
+      st.wakeLock.addEventListener("release",function(){});
+    }
+  }catch(e){}
+}
+function releaseWakeLock(){try{if(st.wakeLock){st.wakeLock.release();st.wakeLock=null;}}catch(e){}}
+
+/* tick: time-based, robust even if tab was throttled in background.
+   Uses real elapsed wall-clock time since last tick. */
+function tick(){
+  var now=Date.now();
+  var deltaSec=st.lastTickTime?(now-st.lastTickTime)/1000:1;
+  st.lastTickTime=now;
+  if(deltaSec<0)deltaSec=0;
+  if(deltaSec>3600)deltaSec=0; // sanity guard
+
+  st.elapsed=Math.floor((now-st.startTimestamp)/1000);
+  $("sTime").textContent=fmtTime(st.elapsed);
+
+  // if no fresh GPS fix for >5s, treat as stopped
+  if(now-st.lastFixTime>5000)st.speed=0;
+
+  var moving=st.speed>=MOVE_THRESHOLD;
+  setMode(moving);
+
+  // STOPPED => add waiting fare for the real elapsed delta
+  if(!moving){
+    st.waitFare+=WAIT_PER_SEC*deltaSec;
+    update();
+  }
+}
+
+function toggleTrip(){
+  var t=T();
+  if(st.running){
+    st.running=false;
+    clearInterval(st.timer);
+    if(st.watchId!=null)navigator.geolocation.clearWatch(st.watchId);
+    releaseWakeLock();
+    $("mainBtn").className="btn start";
+    $("mainBtn").textContent=t.start;
+    $("amt").classList.remove("run");
+    setMode(false);
+    toast(t.ended+" "+(START_FEE+st.distFare+st.waitFare).toFixed(2)+" zł");
+  }else{
+    st.running=true;
+    st.dist=0;st.distFare=0;st.waitFare=0;st.elapsed=0;st.speed=0;
+    st.lastPos=null;st.lastFixTime=Date.now();
+    st.startTimestamp=Date.now();st.lastTickTime=Date.now();
+    startGps();
+    st.timer=setInterval(tick,1000);
+    requestWakeLock();
+    $("mainBtn").className="btn stop";
+    $("mainBtn").textContent=t.stop;
+    $("amt").classList.add("run");
+    toast(t.started);
+    update();
+  }
+}
+
+function resetTrip(){
+  var t=T();
+  if(st.running){toast(t.stopFirst);return;}
+  st.dist=0;st.distFare=0;st.waitFare=0;st.elapsed=0;st.speed=0;
+  $("sTime").textContent="00:00";$("sSpeed").textContent="0";
+  $("speedBar").style.width="0%";
+  setGps("",t.gpsNotReady,t.gpsPress,"");
+  setMode(false);
+  update();toast(t.resetMsg);
+}
+
+function update(){
+  var total=START_FEE+st.distFare+st.waitFare;
+  $("amt").textContent=total.toFixed(2);
+  $("sDist").textContent=st.dist.toFixed(2);
+  $("rDist").textContent=st.distFare.toFixed(2)+" zł";
+  $("rWait").textContent=st.waitFare.toFixed(2)+" zł";
+  $("rTot").textContent=total.toFixed(2)+" zł";
+}
+
+/* When returning to the tab: recompute everything from wall-clock,
+   re-acquire wake lock, and force an immediate catch-up tick. */
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="visible"&&st.running){
+    requestWakeLock();
+    tick(); // catch up missed background time immediately
+  }
+});
+
+/* auto tariff suggestion */
+(function(){
+  var now=new Date(),h=now.getHours(),day=now.getDay();
+  if(h<6||h>=22||day===0){setTimeout(function(){toast("💡 Night/Holiday: Tariff 2 or 4");},800);}
+})();
+
+setLang("en");
+update();
+</script>
+<script>
+if("serviceWorker" in navigator){
+  window.addEventListener("load",function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
