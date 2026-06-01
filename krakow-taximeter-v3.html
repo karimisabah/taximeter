@@ -141,8 +141,8 @@
   <div class="mode" id="modeBox">— READY —</div>
 
   <div class="ctx" id="ctxBox">
-    <div class="row"><span id="ctxTimeLbl">Time</span><span class="val" id="ctxTime">—</span></div>
-    <div class="row"><span id="ctxDayLbl">Day</span><span class="val" id="ctxDay">—</span></div>
+    <div class="row"><span id="ctxTimeLbl">Time period</span><span class="val" id="ctxTime">—</span></div>
+    <div class="row"><span id="ctxDayLbl">Day type</span><span class="val" id="ctxDay">—</span></div>
     <div class="row"><span id="ctxZoneLbl">Zone</span><span class="val" id="ctxZone">—</span></div>
     <div class="row"><span id="ctxTariffLbl">Active tariff</span><span class="val" id="ctxTariff">—</span></div>
   </div>
@@ -179,8 +179,8 @@
   <div class="section">
     <div class="title"><span id="detailsTitle">DETAILS</span></div>
     <div class="row2"><span class="rl" id="rStartLbl">🚀 Start fee</span><span class="rv">9.00 zł</span></div>
-    <div class="row2"><span class="rl" id="rZone1Lbl">📏 Zone I (km)</span><span class="rv" id="rZone1">0.00 zł</span></div>
-    <div class="row2"><span class="rl" id="rZone2Lbl">📏 Zone II (km)</span><span class="rv" id="rZone2">0.00 zł</span></div>
+    <div class="row2"><span class="rl" id="rZone1Lbl">📏 City (km)</span><span class="rv" id="rZone1">0.00 zł</span></div>
+    <div class="row2"><span class="rl" id="rZone2Lbl">📏 Outside city (km)</span><span class="rv" id="rZone2">0.00 zł</span></div>
     <div class="row2"><span class="rl" id="rWaitLbl">⏱ Waiting</span><span class="rv" id="rWait">0.00 zł</span></div>
     <div class="row2 tot"><span class="rl" id="rTotLbl">💰 Total</span><span class="rv" id="rTot">9.00 zł</span></div>
   </div>
@@ -206,7 +206,7 @@ var L={
     t:["Tariff 1","Tariff 2","Tariff 3","Tariff 4"],
     td:["Weekdays 6:00–22:00 · Zone I","Night/Sun/Holiday · Zone I","Weekdays 6:00–22:00 · Zone II","Night/Sun/Holiday · Zone II"],
     start:"▶ START", stop:"■ STOP", reset:"↺ RESET",
-    rStart:"🚀 Start fee", rZ1:"📏 Zone I (km)", rZ2:"📏 Zone II (km)", rWait:"⏱ Waiting", rTot:"💰 Total",
+    rStart:"🚀 Start fee", rZ1:"📏 City (km)", rZ2:"📏 Outside city (km)", rWait:"⏱ Waiting", rTot:"💰 Total",
     started:"▶ Trip started", ended:"✓ Trip ended ·", resetMsg:"↺ Reset done",
     stopFirst:"Stop the trip first",
     autoOn:"AUTO ON", autoOff:"AUTO OFF",
@@ -216,9 +216,9 @@ var L={
     ctxTimeLbl:"Time period", ctxDayLbl:"Day type", ctxZoneLbl:"Zone", ctxTariffLbl:"Active tariff",
     dayWeek:"Weekday", daySun:"Sunday", dayHol:"Holiday",
     timeDay:"Day (6–22)", timeNight:"Night (22–6)",
-    zone1:"Zone I (City)", zone2:"Zone II (Suburbs)",
-    enteredZ2:"🛫 Entered Zone II — Tariff switched",
-    enteredZ1:"🏙️ Entered Zone I — Tariff switched",
+    zone1:"Zone I (City)", zone2:"Zone II (Outside)",
+    enteredZ2:"🛫 Left city — Tariff switched",
+    enteredZ1:"🏙️ Entered city — Tariff switched",
     holidayWarn:"⚠ Today is a Polish public holiday",
     autoHint:"⚡ AUTO MODE",
     manualHint:"✋ MANUAL MODE"
@@ -237,7 +237,7 @@ var L={
     t:["Taryfa 1","Taryfa 2","Taryfa 3","Taryfa 4"],
     td:["Dni robocze 6:00–22:00 · Strefa I","Noc/Niedz./Święta · Strefa I","Dni robocze 6:00–22:00 · Strefa II","Noc/Niedz./Święta · Strefa II"],
     start:"▶ START", stop:"■ STOP", reset:"↺ RESETUJ",
-    rStart:"🚀 Opłata startowa", rZ1:"📏 Strefa I (km)", rZ2:"📏 Strefa II (km)", rWait:"⏱ Postój", rTot:"💰 Razem",
+    rStart:"🚀 Opłata startowa", rZ1:"📏 Miasto (km)", rZ2:"📏 Poza miastem (km)", rWait:"⏱ Postój", rTot:"💰 Razem",
     started:"▶ Przejazd rozpoczęty", ended:"✓ Przejazd zakończony ·", resetMsg:"↺ Zresetowano",
     stopFirst:"Najpierw zatrzymaj przejazd",
     autoOn:"AUTO WŁ.", autoOff:"AUTO WYŁ.",
@@ -247,9 +247,9 @@ var L={
     ctxTimeLbl:"Pora", ctxDayLbl:"Typ dnia", ctxZoneLbl:"Strefa", ctxTariffLbl:"Aktywna taryfa",
     dayWeek:"Dzień roboczy", daySun:"Niedziela", dayHol:"Święto",
     timeDay:"Dzień (6–22)", timeNight:"Noc (22–6)",
-    zone1:"Strefa I (Miasto)", zone2:"Strefa II (Przedmieścia)",
-    enteredZ2:"🛫 Wjazd do Strefy II — zmiana taryfy",
-    enteredZ1:"🏙️ Wjazd do Strefy I — zmiana taryfy",
+    zone1:"Strefa I (Miasto)", zone2:"Strefa II (Poza miastem)",
+    enteredZ2:"🛫 Wyjazd z miasta — zmiana taryfy",
+    enteredZ1:"🏙️ Wjazd do miasta — zmiana taryfy",
     holidayWarn:"⚠ Dziś jest święto państwowe",
     autoHint:"⚡ TRYB AUTO",
     manualHint:"✋ TRYB RĘCZNY"
@@ -263,17 +263,30 @@ var START_FEE=9.00, WAIT_PER_SEC=55/3600;
 var MOVE_THRESHOLD=6;
 
 /* ===== KRAKÓW CITY BOUNDARY (Zone I polygon) =====
-   Approximate administrative boundary of Kraków city.
-   Anything OUTSIDE this polygon = Zone II.
-   Coordinates ordered clockwise. */
+   Accurate administrative borders of Kraków city.
+   Airport Jan Paweł II Kraków-Balice is OUTSIDE city limits (in Zabierzów).
+   The western boundary stops ~7-8 km before the airport. */
 var KRAKOW_POLYGON=[
-  [50.1280,19.7700],[50.1290,19.8000],[50.1240,19.8400],[50.1180,19.8700],
-  [50.1100,19.9050],[50.1050,19.9400],[50.1020,19.9750],[50.1000,20.0100],
-  [50.0970,20.0400],[50.0900,20.0650],[50.0780,20.0800],[50.0650,20.0900],
-  [50.0500,20.0950],[50.0350,20.0900],[50.0200,20.0750],[50.0100,20.0500],
-  [50.0050,20.0200],[50.0040,19.9850],[50.0080,19.9500],[50.0150,19.9150],
-  [50.0250,19.8850],[50.0400,19.8550],[50.0600,19.8300],[50.0800,19.8050],
-  [50.1000,19.7850],[50.1180,19.7720],[50.1280,19.7700]
+  // North-west (Mydlniki/Bronowice area, border with Zabierzów)
+  [50.0950,19.8000],[50.0980,19.8200],[50.1020,19.8450],[50.1050,19.8700],
+  // North (Wola Justowska, Pasternik, Bronowice Wielkie)
+  [50.1100,19.8900],[50.1150,19.9100],[50.1200,19.9350],[50.1230,19.9600],
+  // North-east (Prądnik Biały, Górka Narodowa)
+  [50.1280,19.9850],[50.1290,20.0100],[50.1270,20.0350],[50.1230,20.0600],
+  // East (Mistrzejowice, Nowa Huta north)
+  [50.1180,20.0850],[50.1100,20.1100],[50.1000,20.1350],[50.0900,20.1550],
+  // Nowa Huta east
+  [50.0800,20.1700],[50.0700,20.1800],[50.0600,20.1850],[50.0500,20.1830],
+  // South-east (Bieżanów, Rybitwy, Płaszów)
+  [50.0400,20.1750],[50.0300,20.1600],[50.0200,20.1400],[50.0150,20.1150],
+  // South (Swoszowice, Kosocice)
+  [50.0080,20.0900],[50.0020,20.0650],[49.9980,20.0400],[49.9970,20.0150],
+  // South-west (Skotniki, Sidzina, Kobierzyn)
+  [49.9990,19.9900],[50.0040,19.9650],[50.0100,19.9400],[50.0180,19.9150],
+  // West (Bodzów, Tyniec, Pychowice)
+  [50.0280,19.8900],[50.0400,19.8650],[50.0550,19.8400],[50.0700,19.8200],
+  // Western border (Olszanica, Mydlniki — STOPS BEFORE airport)
+  [50.0820,19.8050],[50.0900,19.8000],[50.0950,19.8000]
 ];
 
 /* Point-in-polygon test (ray casting) */
@@ -290,7 +303,6 @@ function isInKrakow(lat,lng){
 
 /* ===== POLISH HOLIDAYS ===== */
 function easterDate(year){
-  // Gauss algorithm
   var a=year%19, b=Math.floor(year/100), c=year%100;
   var d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
   var g=Math.floor((b-f+1)/3);
@@ -305,12 +317,10 @@ function easterDate(year){
 
 function isPolishHoliday(date){
   var y=date.getFullYear(), m=date.getMonth()+1, d=date.getDate();
-  // Fixed-date holidays
   var fixed=[[1,1],[1,6],[5,1],[5,3],[8,15],[11,1],[11,11],[12,25],[12,26]];
   for(var i=0;i<fixed.length;i++){
     if(m===fixed[i][0]&&d===fixed[i][1]) return true;
   }
-  // Easter-based
   var easter=easterDate(y);
   var easterMon=new Date(easter); easterMon.setDate(easter.getDate()+1);
   var corpusChristi=new Date(easter); corpusChristi.setDate(easter.getDate()+60);
@@ -319,11 +329,10 @@ function isPolishHoliday(date){
   return false;
 }
 
-/* Determine correct tariff for current time and zone */
 function detectTariff(zone){
   var now=new Date();
   var h=now.getHours();
-  var day=now.getDay(); // 0=Sun
+  var day=now.getDay();
   var isNight=h<6||h>=22;
   var isSun=day===0;
   var isHol=isPolishHoliday(now);
@@ -421,7 +430,6 @@ function applyAutoTariff(){
     var oldTariff=st.tariff;
     st.tariff=newTariff;
     if(st.running && oldTariff!==newTariff){
-      // notify zone change specifically
       if(TARIFFS[oldTariff].zone!==TARIFFS[newTariff].zone){
         toast((newTariff>=3?t.enteredZ2:t.enteredZ1)+" "+t.t[newTariff-1]);
       }else{
@@ -466,7 +474,6 @@ function updateContext(){
   $("ctxZone").className="val zone"+st.currentZone;
   $("ctxTariff").textContent=t.t[st.tariff-1]+" · "+TARIFFS[st.tariff].rate.toFixed(2)+" zł/km";
 
-  // Holiday warning
   if(isHol){
     $("warnBox").textContent=t.holidayWarn;
     $("warnBox").classList.add("show");
@@ -486,7 +493,6 @@ function onPos(pos){
   $("speedBar").style.width=Math.min(kmh/120*100,100)+"%";
   setGps("active",t.gpsActive,c.latitude.toFixed(5)+", "+c.longitude.toFixed(5),"±"+Math.round(c.accuracy)+"m");
 
-  // Detect zone from GPS
   var newZone=isInKrakow(c.latitude,c.longitude)?1:2;
   if(newZone!==st.currentZone){
     st.currentZone=newZone;
@@ -494,17 +500,12 @@ function onPos(pos){
     updateContext();
   }
 
-  // Add distance
   if(st.running&&st.lastPos&&movedDist>0.004&&movedDist<0.8&&c.accuracy<40){
     st.dist+=movedDist;
-    // Track distance per zone
     if(st.currentZone===1) st.distZ1+=movedDist;
     else st.distZ2+=movedDist;
-    // Fare = sum of distance in each zone × that zone's current rate logic
-    // We compute as: distance in Zone I × tariff-rate-for-zone-I-now, plus Zone II × tariff-rate-for-zone-II-now
     var rate1=TARIFFS[detectTariffForZone(1)].rate;
     var rate2=TARIFFS[detectTariffForZone(2)].rate;
-    // In manual mode, use selected tariff for current zone:
     if(!st.autoMode){
       if(TARIFFS[st.tariff].zone===1){rate1=TARIFFS[st.tariff].rate;rate2=TARIFFS[st.tariff].rate;}
       else{rate1=TARIFFS[st.tariff].rate;rate2=TARIFFS[st.tariff].rate;}
@@ -562,7 +563,6 @@ function tick(){
     st.waitFare+=WAIT_PER_SEC*deltaSec;
     update();
   }
-  // Re-check auto-tariff every minute (in case hour crosses 22:00 mid-trip)
   if(st.elapsed%60===0 && st.autoMode){
     applyAutoTariff();
     updateContext();
@@ -615,7 +615,6 @@ function update(){
   var total=START_FEE+st.distFare+st.waitFare;
   $("amt").textContent=total.toFixed(2);
   $("sDist").textContent=st.dist.toFixed(2);
-  // Approx split for display
   var rate1=TARIFFS[detectTariffForZone(1)].rate;
   var rate2=TARIFFS[detectTariffForZone(2)].rate;
   $("rZone1").textContent=(st.distZ1*rate1).toFixed(2)+" zł";
@@ -632,14 +631,12 @@ document.addEventListener("visibilitychange",function(){
   }
 });
 
-// Service worker for PWA
 if("serviceWorker" in navigator){
   window.addEventListener("load",function(){
     navigator.serviceWorker.register("sw.js").catch(function(){});
   });
 }
 
-// Update context every minute in idle state too
 setInterval(function(){
   updateContext();
   if(!st.running && st.autoMode) applyAutoTariff();
