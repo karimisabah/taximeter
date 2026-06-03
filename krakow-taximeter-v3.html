@@ -209,10 +209,11 @@ var L={
     rStart:"🚀 Start fee", rZ1:"📏 City (km)", rZ2:"📏 Outside city (km)", rWait:"⏱ Waiting", rTot:"💰 Total",
     started:"▶ Trip started", ended:"✓ Trip ended ·", resetMsg:"↺ Reset done",
     stopFirst:"Stop the trip first",
-    autoOn:"AUTO ON", autoOff:"AUTO OFF",
+    autoOn:"AUTO ON", autoOff:"MANUAL",
     autoModeOn:"⚡ Auto mode: tariff selected automatically",
-    autoModeOff:"✋ Manual mode: select tariff yourself",
+    autoModeOff:"✋ Manual mode: you choose the tariff",
     tariffSwitch:"🔄 Auto-switched to ",
+    manualTariffSet:"✋ Manual: ",
     ctxTimeLbl:"Time period", ctxDayLbl:"Day type", ctxZoneLbl:"Zone", ctxTariffLbl:"Active tariff",
     dayWeek:"Weekday", daySun:"Sunday", dayHol:"Holiday",
     timeDay:"Day (6–22)", timeNight:"Night (22–6)",
@@ -240,10 +241,11 @@ var L={
     rStart:"🚀 Opłata startowa", rZ1:"📏 Miasto (km)", rZ2:"📏 Poza miastem (km)", rWait:"⏱ Postój", rTot:"💰 Razem",
     started:"▶ Przejazd rozpoczęty", ended:"✓ Przejazd zakończony ·", resetMsg:"↺ Zresetowano",
     stopFirst:"Najpierw zatrzymaj przejazd",
-    autoOn:"AUTO WŁ.", autoOff:"AUTO WYŁ.",
+    autoOn:"AUTO WŁ.", autoOff:"RĘCZNY",
     autoModeOn:"⚡ Tryb auto: taryfa wybierana automatycznie",
     autoModeOff:"✋ Tryb ręczny: wybierz taryfę sam",
     tariffSwitch:"🔄 Auto-zmiana na ",
+    manualTariffSet:"✋ Ręcznie: ",
     ctxTimeLbl:"Pora", ctxDayLbl:"Typ dnia", ctxZoneLbl:"Strefa", ctxTariffLbl:"Aktywna taryfa",
     dayWeek:"Dzień roboczy", daySun:"Niedziela", dayHol:"Święto",
     timeDay:"Dzień (6–22)", timeNight:"Noc (22–6)",
@@ -262,34 +264,20 @@ var TARIFFS={1:{rate:4.00,zone:1},2:{rate:6.00,zone:1},3:{rate:8.00,zone:2},4:{r
 var START_FEE=9.00, WAIT_PER_SEC=55/3600;
 var MOVE_THRESHOLD=6;
 
-/* ===== KRAKÓW CITY BOUNDARY (Zone I polygon) =====
-   Accurate administrative borders of Kraków city.
-   Airport Jan Paweł II Kraków-Balice is OUTSIDE city limits (in Zabierzów).
-   The western boundary stops ~7-8 km before the airport. */
+/* ===== KRAKÓW CITY BOUNDARY ===== */
 var KRAKOW_POLYGON=[
-  // North-west (Mydlniki/Bronowice area, border with Zabierzów)
   [50.0950,19.8000],[50.0980,19.8200],[50.1020,19.8450],[50.1050,19.8700],
-  // North (Wola Justowska, Pasternik, Bronowice Wielkie)
   [50.1100,19.8900],[50.1150,19.9100],[50.1200,19.9350],[50.1230,19.9600],
-  // North-east (Prądnik Biały, Górka Narodowa)
   [50.1280,19.9850],[50.1290,20.0100],[50.1270,20.0350],[50.1230,20.0600],
-  // East (Mistrzejowice, Nowa Huta north)
   [50.1180,20.0850],[50.1100,20.1100],[50.1000,20.1350],[50.0900,20.1550],
-  // Nowa Huta east
   [50.0800,20.1700],[50.0700,20.1800],[50.0600,20.1850],[50.0500,20.1830],
-  // South-east (Bieżanów, Rybitwy, Płaszów)
   [50.0400,20.1750],[50.0300,20.1600],[50.0200,20.1400],[50.0150,20.1150],
-  // South (Swoszowice, Kosocice)
   [50.0080,20.0900],[50.0020,20.0650],[49.9980,20.0400],[49.9970,20.0150],
-  // South-west (Skotniki, Sidzina, Kobierzyn)
   [49.9990,19.9900],[50.0040,19.9650],[50.0100,19.9400],[50.0180,19.9150],
-  // West (Bodzów, Tyniec, Pychowice)
   [50.0280,19.8900],[50.0400,19.8650],[50.0550,19.8400],[50.0700,19.8200],
-  // Western border (Olszanica, Mydlniki — STOPS BEFORE airport)
   [50.0820,19.8050],[50.0900,19.8000],[50.0950,19.8000]
 ];
 
-/* Point-in-polygon test (ray casting) */
 function isInKrakow(lat,lng){
   var n=KRAKOW_POLYGON.length, inside=false;
   for(var i=0,j=n-1;i<n;j=i++){
@@ -329,13 +317,10 @@ function isPolishHoliday(date){
   return false;
 }
 
-function detectTariff(zone){
+function detectTariffForZone(zone){
   var now=new Date();
-  var h=now.getHours();
-  var day=now.getDay();
-  var isNight=h<6||h>=22;
-  var isSun=day===0;
-  var isHol=isPolishHoliday(now);
+  var h=now.getHours(), day=now.getDay();
+  var isNight=h<6||h>=22, isSun=day===0, isHol=isPolishHoliday(now);
   var isSpecial=isNight||isSun||isHol;
   if(zone===1) return isSpecial?2:1;
   return isSpecial?4:3;
@@ -364,6 +349,24 @@ function haversine(a1,o1,a2,o2){
 }
 function fmtTime(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
   function p(n){return(n<10?"0":"")+n;}return h>0?h+":"+p(m)+":"+p(sec):p(m)+":"+p(sec);}
+
+/* ===== CORE FARE CALC =====
+   This is the SINGLE source of truth for fare calculation.
+   In AUTO mode: distance is split between Zone I & II by GPS,
+                 each km charged at the auto-detected tariff for its zone.
+   In MANUAL mode: ALL distance is charged at the user-selected tariff,
+                   regardless of GPS zone. */
+function recalcFare(){
+  if(st.autoMode){
+    var rate1=TARIFFS[detectTariffForZone(1)].rate;
+    var rate2=TARIFFS[detectTariffForZone(2)].rate;
+    st.distFare=st.distZ1*rate1+st.distZ2*rate2;
+  }else{
+    // Manual mode: total distance × selected tariff rate
+    var manualRate=TARIFFS[st.tariff].rate;
+    st.distFare=st.dist*manualRate;
+  }
+}
 
 function setLang(l){
   lang=l;
@@ -407,24 +410,34 @@ function toggleAuto(){
   if(st.autoMode){
     applyAutoTariff();
   }
+  recalcFare();
   updateTariffUI();
-}
-
-function setTariff(n){
-  if(st.autoMode){
-    toast(T().autoModeOn);
-    return;
-  }
-  st.tariff=n;
-  updateTariffUI();
-  toast(T().t[n-1]+" · "+TARIFFS[n].rate.toFixed(2)+" zł/km");
   updateContext();
   update();
 }
 
+function setTariff(n){
+  var t=T();
+  // In MANUAL mode, user can pick any tariff freely.
+  // In AUTO mode, picking a tariff switches to manual mode automatically.
+  if(st.autoMode){
+    st.autoMode=false;
+    $("autoBadge").textContent=t.autoOff;
+    $("autoBadge").classList.add("off");
+    $("autoHint").textContent=t.manualHint;
+    toast(t.autoModeOff);
+  }
+  st.tariff=n;
+  recalcFare();
+  updateTariffUI();
+  updateContext();
+  update();
+  toast(t.manualTariffSet+t.t[n-1]+" · "+TARIFFS[n].rate.toFixed(2)+" zł/km");
+}
+
 function applyAutoTariff(){
   if(!st.autoMode) return;
-  var newTariff=detectTariff(st.currentZone);
+  var newTariff=detectTariffForZone(st.currentZone);
   if(newTariff!==st.tariff){
     var t=T();
     var oldTariff=st.tariff;
@@ -472,7 +485,7 @@ function updateContext(){
   $("ctxDay").textContent=isHol?t.dayHol:(isSun?t.daySun:t.dayWeek);
   $("ctxZone").textContent=st.currentZone===1?t.zone1:t.zone2;
   $("ctxZone").className="val zone"+st.currentZone;
-  $("ctxTariff").textContent=t.t[st.tariff-1]+" · "+TARIFFS[st.tariff].rate.toFixed(2)+" zł/km";
+  $("ctxTariff").textContent=t.t[st.tariff-1]+" · "+TARIFFS[st.tariff].rate.toFixed(2)+" zł/km"+(st.autoMode?"":" ✋");
 
   if(isHol){
     $("warnBox").textContent=t.holidayWarn;
@@ -504,25 +517,10 @@ function onPos(pos){
     st.dist+=movedDist;
     if(st.currentZone===1) st.distZ1+=movedDist;
     else st.distZ2+=movedDist;
-    var rate1=TARIFFS[detectTariffForZone(1)].rate;
-    var rate2=TARIFFS[detectTariffForZone(2)].rate;
-    if(!st.autoMode){
-      if(TARIFFS[st.tariff].zone===1){rate1=TARIFFS[st.tariff].rate;rate2=TARIFFS[st.tariff].rate;}
-      else{rate1=TARIFFS[st.tariff].rate;rate2=TARIFFS[st.tariff].rate;}
-    }
-    st.distFare=st.distZ1*rate1+st.distZ2*rate2;
+    recalcFare();
     update();
   }
   st.lastPos={lat:c.latitude,lng:c.longitude};
-}
-
-function detectTariffForZone(zone){
-  var now=new Date();
-  var h=now.getHours(), day=now.getDay();
-  var isNight=h<6||h>=22, isSun=day===0, isHol=isPolishHoliday(now);
-  var isSpecial=isNight||isSun||isHol;
-  if(zone===1) return isSpecial?2:1;
-  return isSpecial?4:3;
 }
 
 function onErr(e){
@@ -565,7 +563,9 @@ function tick(){
   }
   if(st.elapsed%60===0 && st.autoMode){
     applyAutoTariff();
+    recalcFare();
     updateContext();
+    update();
   }
 }
 
@@ -615,10 +615,25 @@ function update(){
   var total=START_FEE+st.distFare+st.waitFare;
   $("amt").textContent=total.toFixed(2);
   $("sDist").textContent=st.dist.toFixed(2);
-  var rate1=TARIFFS[detectTariffForZone(1)].rate;
-  var rate2=TARIFFS[detectTariffForZone(2)].rate;
-  $("rZone1").textContent=(st.distZ1*rate1).toFixed(2)+" zł";
-  $("rZone2").textContent=(st.distZ2*rate2).toFixed(2)+" zł";
+
+  // Display breakdown
+  if(st.autoMode){
+    var rate1=TARIFFS[detectTariffForZone(1)].rate;
+    var rate2=TARIFFS[detectTariffForZone(2)].rate;
+    $("rZone1").textContent=(st.distZ1*rate1).toFixed(2)+" zł";
+    $("rZone2").textContent=(st.distZ2*rate2).toFixed(2)+" zł";
+  }else{
+    // Manual mode: show full distance fare under current selected tariff's zone
+    var manualRate=TARIFFS[st.tariff].rate;
+    var manualZone=TARIFFS[st.tariff].zone;
+    if(manualZone===1){
+      $("rZone1").textContent=(st.dist*manualRate).toFixed(2)+" zł";
+      $("rZone2").textContent="0.00 zł";
+    }else{
+      $("rZone1").textContent="0.00 zł";
+      $("rZone2").textContent=(st.dist*manualRate).toFixed(2)+" zł";
+    }
+  }
   $("rWait").textContent=st.waitFare.toFixed(2)+" zł";
   $("rTot").textContent=total.toFixed(2)+" zł";
 }
@@ -627,7 +642,11 @@ document.addEventListener("visibilitychange",function(){
   if(document.visibilityState==="visible"&&st.running){
     requestWakeLock();
     tick();
-    if(st.autoMode) applyAutoTariff();
+    if(st.autoMode){
+      applyAutoTariff();
+      recalcFare();
+      update();
+    }
   }
 });
 
@@ -639,7 +658,9 @@ if("serviceWorker" in navigator){
 
 setInterval(function(){
   updateContext();
-  if(!st.running && st.autoMode) applyAutoTariff();
+  if(!st.running && st.autoMode){
+    applyAutoTariff();
+  }
 },60000);
 
 setLang("en");
