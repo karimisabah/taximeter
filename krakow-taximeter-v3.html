@@ -10,6 +10,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Kraków Taximeter</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
   :root{
     --bg:#05101f;--panel:#0d1e35;--panel2:#112240;--acc:#00e5ff;--acc2:#ff6b35;
@@ -87,7 +88,6 @@
   .tbtn .td{font-size:9px;color:var(--muted);line-height:1.5}
   .tbtn .tp{font-size:15px;color:var(--green);margin-top:4px;font-weight:700}
 
-  /* ===== SLIDE TO START/STOP ===== */
   .slider-wrap{position:relative;width:100%;height:70px;background:var(--panel);
     border:2px solid var(--border);border-radius:35px;overflow:hidden;
     box-shadow:inset 0 2px 8px rgba(0,0,0,.3)}
@@ -129,7 +129,7 @@
     padding:10px 14px;font-size:11px;color:var(--yellow);line-height:1.5;display:none}
   .warn.show{display:block}
 
-  /* ===== TRIP SUMMARY MODAL ===== */
+  /* MODAL */
   .modal-bg{position:fixed;inset:0;background:rgba(0,5,15,.85);z-index:1000;
     display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;
     backdrop-filter:blur(4px)}
@@ -163,6 +163,15 @@
   .total-big .v{font-size:42px;font-weight:900;color:var(--green);
     text-shadow:0 0 20px rgba(0,255,136,.4);font-variant-numeric:tabular-nums;letter-spacing:-1px}
   .total-big .c{font-size:12px;color:var(--muted);margin-top:4px}
+
+  /* QR CODE SECTION */
+  .qr-section{margin:14px 0;padding:20px;background:#fff;border-radius:16px;text-align:center}
+  .qr-section h3{font-size:11px;color:#333;letter-spacing:2px;margin-bottom:12px;
+    text-transform:uppercase;font-weight:700}
+  .qr-section .qr-canvas{display:inline-block;background:#fff;padding:8px;border-radius:8px}
+  .qr-section canvas{display:block;max-width:100%;height:auto}
+  .qr-section .qr-hint{font-size:10px;color:#666;margin-top:10px;line-height:1.5}
+  .qr-section .qr-id{font-size:9px;color:#999;margin-top:6px;font-family:monospace;letter-spacing:1px}
 </style>
 </head>
 <body>
@@ -228,7 +237,6 @@
     </div>
   </div>
 
-  <!-- SLIDE TO START/STOP -->
   <div class="slider-wrap start-mode" id="sliderWrap">
     <div class="slider-arrows right">›››</div>
     <div class="slider-track-text" id="sliderText">SLIDE TO START</div>
@@ -248,7 +256,6 @@
 </div>
 <div class="toast" id="toast"></div>
 
-<!-- TRIP SUMMARY MODAL -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h2 id="modalTitle">🧾 TRIP RECEIPT</h2>
@@ -290,6 +297,14 @@
       <div class="rline"><span class="rk" id="modalTariffLbl2">Tariff used</span><span class="rv" id="modalTariff">—</span></div>
     </div>
 
+    <!-- QR CODE -->
+    <div class="qr-section">
+      <h3 id="qrTitle">📱 SCAN TO GET RECEIPT</h3>
+      <div class="qr-canvas"><canvas id="qrCanvas"></canvas></div>
+      <div class="qr-hint" id="qrHint">Passenger: scan with phone camera to receive trip details</div>
+      <div class="qr-id" id="qrId">—</div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-share" id="btnShare" onclick="shareReceipt()">📤 SHARE</button>
       <button class="btn-close" id="btnClose" onclick="closeReceipt()">✓ CLOSE</button>
@@ -300,7 +315,6 @@
 <script>
 "use strict";
 
-/* ===== TRANSLATIONS ===== */
 var L={
   en:{
     sub:"Official Kraków taximeter", fareLbl:"TOTAL FARE",
@@ -347,7 +361,10 @@ var L={
     mMode:"Mode", mTariff:"Tariff used",
     mModeAuto:"Auto", mModeManual:"Manual",
     btnShare:"📤 SHARE", btnClose:"✓ CLOSE",
-    minShort:"min", shareText:"Kraków Taxi Receipt"
+    minShort:"min", shareText:"Kraków Taxi Receipt",
+    qrTitle:"📱 SCAN TO GET RECEIPT",
+    qrHint:"Passenger: scan with phone camera to receive trip details",
+    qrTripId:"Trip ID"
   },
   pl:{
     sub:"Oficjalny taksometr Krakowa", fareLbl:"CAŁKOWITA OPŁATA",
@@ -394,17 +411,18 @@ var L={
     mMode:"Tryb", mTariff:"Użyta taryfa",
     mModeAuto:"Automatyczny", mModeManual:"Ręczny",
     btnShare:"📤 UDOSTĘPNIJ", btnClose:"✓ ZAMKNIJ",
-    minShort:"min", shareText:"Rachunek za taksówkę Kraków"
+    minShort:"min", shareText:"Rachunek za taksówkę Kraków",
+    qrTitle:"📱 ZESKANUJ ABY OTRZYMAĆ RACHUNEK",
+    qrHint:"Pasażer: zeskanuj telefonem aby otrzymać szczegóły przejazdu",
+    qrTripId:"ID przejazdu"
   }
 };
 var lang="en";
 
-/* ===== TARIFFS ===== */
 var TARIFFS={1:{rate:4.00,zone:1},2:{rate:6.00,zone:1},3:{rate:8.00,zone:2},4:{rate:12.00,zone:2}};
 var START_FEE=9.00, WAIT_PER_SEC=55/3600;
 var MOVE_THRESHOLD=6;
 
-/* ===== KRAKÓW CITY BOUNDARY ===== */
 var KRAKOW_POLYGON=[
   [50.0950,19.8000],[50.0980,19.8200],[50.1020,19.8450],[50.1050,19.8700],
   [50.1100,19.8900],[50.1150,19.9100],[50.1200,19.9350],[50.1230,19.9600],
@@ -429,7 +447,6 @@ function isInKrakow(lat,lng){
   return inside;
 }
 
-/* ===== POLISH HOLIDAYS ===== */
 function easterDate(year){
   var a=year%19, b=Math.floor(year/100), c=year%100;
   var d=Math.floor(b/4), e=b%4, f=Math.floor((b+8)/25);
@@ -466,14 +483,12 @@ function detectTariffForZone(zone){
   return isSpecial?4:3;
 }
 
-/* ===== STATE ===== */
 var st={
   running:false, autoMode:true, tariff:1, currentZone:1,
   dist:0, distZ1:0, distZ2:0, distFare:0, waitFare:0,
   elapsed:0, waitSeconds:0, speed:0, lastPos:null, lastFixTime:0,
   watchId:null, timer:null, wakeLock:null,
   startTimestamp:0, endTimestamp:0, lastTickTime:0,
-  // Trip log
   lastTrip:null
 };
 
@@ -498,6 +513,13 @@ function fmtDateTime(ts){
   function p(n){return(n<10?"0":"")+n;}
   return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+" "+
     p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());
+}
+
+function genTripId(){
+  // short unique ID based on timestamp + random
+  var t=Date.now().toString(36).toUpperCase();
+  var r=Math.random().toString(36).substring(2,5).toUpperCase();
+  return "KRK-"+t.slice(-6)+"-"+r;
 }
 
 function recalcFare(){
@@ -538,7 +560,6 @@ function setLang(l){
   for(var i=1;i<=4;i++){$("t"+i+"n").textContent=t.t[i-1];$("t"+i+"d").textContent=t.td[i-1];}
   $("sliderText").textContent=st.running?t.slideStop:t.slideStart;
   if(!st.running){$("gpsStatus").textContent=t.gpsNotReady;$("gpsDetail").textContent=t.gpsPress;}
-  // Modal labels
   $("modalTitle").textContent=t.receipt;
   $("modalSub").textContent=t.receiptSub;
   $("modalTotalLbl").textContent=t.fareLbl;
@@ -562,6 +583,8 @@ function setLang(l){
   $("modalTariffLbl2").textContent=t.mTariff;
   $("btnShare").textContent=t.btnShare;
   $("btnClose").textContent=t.btnClose;
+  $("qrTitle").textContent=t.qrTitle;
+  $("qrHint").textContent=t.qrHint;
   setMode(st.speed>=MOVE_THRESHOLD);
   updateContext();
   document.documentElement.lang=l;
@@ -732,7 +755,6 @@ function startTrip(){
   startGps();
   st.timer=setInterval(tick,1000);
   requestWakeLock();
-  // Slider becomes STOP mode
   $("sliderWrap").classList.remove("start-mode");
   $("sliderWrap").classList.add("stop-mode");
   $("sliderText").textContent=t.slideStop;
@@ -745,9 +767,9 @@ function startTrip(){
 
 function endTrip(){
   var t=T();
-  // Capture all trip data BEFORE clearing
   st.endTimestamp=Date.now();
   st.lastTrip={
+    id:genTripId(),
     startTime:st.startTimestamp,
     endTime:st.endTimestamp,
     duration:st.elapsed,
@@ -761,7 +783,6 @@ function endTrip(){
     total:START_FEE+st.distFare+st.waitFare,
     tariff:st.tariff,
     autoMode:st.autoMode,
-    // For breakdown
     rate1:TARIFFS[detectTariffForZone(1)].rate,
     rate2:TARIFFS[detectTariffForZone(2)].rate,
     manualRate:TARIFFS[st.tariff].rate
@@ -770,7 +791,6 @@ function endTrip(){
   clearInterval(st.timer);
   if(st.watchId!=null)navigator.geolocation.clearWatch(st.watchId);
   releaseWakeLock();
-  // Slider back to START mode
   $("sliderWrap").classList.remove("stop-mode");
   $("sliderWrap").classList.add("start-mode");
   $("sliderText").textContent=t.slideStart;
@@ -780,6 +800,39 @@ function endTrip(){
   setMode(false);
   toast(t.ended);
   showReceipt();
+}
+
+function buildReceiptText(){
+  var t=T(), tr=st.lastTrip;
+  if(!tr) return "";
+  var text=t.shareText+"\n";
+  text+="================\n";
+  text+=t.qrTripId+": "+tr.id+"\n";
+  text+="\n";
+  text+=t.mStart+": "+fmtDateTime(tr.startTime)+"\n";
+  text+=t.mEnd+": "+fmtDateTime(tr.endTime)+"\n";
+  text+=t.mDur+": "+fmtTime(tr.duration)+"\n";
+  text+="\n";
+  text+=t.mCityKm+": "+tr.distZ1.toFixed(2)+" km\n";
+  text+=t.mOutKm+": "+tr.distZ2.toFixed(2)+" km\n";
+  text+=t.mTotalKm+": "+tr.distTotal.toFixed(2)+" km\n";
+  text+="\n";
+  text+=t.mStartFee+": "+tr.startFee.toFixed(2)+" zl\n";
+  if(tr.autoMode){
+    text+=t.mCityFare+": "+(tr.distZ1*tr.rate1).toFixed(2)+" zl ("+tr.rate1.toFixed(2)+" zl/km)\n";
+    text+=t.mOutFare+": "+(tr.distZ2*tr.rate2).toFixed(2)+" zl ("+tr.rate2.toFixed(2)+" zl/km)\n";
+  }else{
+    var f=tr.distTotal*tr.manualRate;
+    if(TARIFFS[tr.tariff].zone===1) text+=t.mCityFare+": "+f.toFixed(2)+" zl ("+tr.manualRate.toFixed(2)+" zl/km)\n";
+    else text+=t.mOutFare+": "+f.toFixed(2)+" zl ("+tr.manualRate.toFixed(2)+" zl/km)\n";
+  }
+  var waitMin=Math.floor(tr.waitSec/60);
+  text+=t.mWaitFare+": "+tr.waitFare.toFixed(2)+" zl ("+waitMin+" "+t.minShort+")\n";
+  text+="================\n";
+  text+=t.mTotalLbl+": "+tr.total.toFixed(2)+" zl\n";
+  text+=t.mTariff+": "+t.t[tr.tariff-1]+" ("+TARIFFS[tr.tariff].rate.toFixed(2)+" zl/km)\n";
+  text+=t.mMode+": "+(tr.autoMode?t.mModeAuto:t.mModeManual);
+  return text;
 }
 
 function showReceipt(){
@@ -795,7 +848,6 @@ function showReceipt(){
   $("modalOutKm").textContent=tr.distZ2.toFixed(2)+" km";
   $("modalTotalKm").textContent=tr.distTotal.toFixed(2)+" km";
 
-  // Fare breakdown — depends on mode
   if(tr.autoMode){
     $("modalCityFare").textContent=(tr.distZ1*tr.rate1).toFixed(2)+" zł ("+tr.rate1.toFixed(2)+" zł/km)";
     $("modalOutFare").textContent=(tr.distZ2*tr.rate2).toFixed(2)+" zł ("+tr.rate2.toFixed(2)+" zł/km)";
@@ -814,6 +866,19 @@ function showReceipt(){
   $("modalTotalFare").textContent=tr.total.toFixed(2)+" zł";
   $("modalMode").textContent=tr.autoMode?t.mModeAuto:t.mModeManual;
   $("modalTariff").textContent=t.t[tr.tariff-1]+" · "+TARIFFS[tr.tariff].rate.toFixed(2)+" zł/km";
+  $("qrId").textContent=t.qrTripId+": "+tr.id;
+
+  // Generate QR code with full receipt text
+  var qrText=buildReceiptText();
+  var canvas=$("qrCanvas");
+  if(window.QRCode){
+    QRCode.toCanvas(canvas, qrText, {
+      width:240, margin:1, errorCorrectionLevel:'M',
+      color:{dark:'#000000', light:'#ffffff'}
+    }, function(err){
+      if(err) console.error("QR error",err);
+    });
+  }
 
   $("modalBg").classList.add("show");
 }
@@ -824,36 +889,11 @@ function closeReceipt(){
 
 function shareReceipt(){
   if(!st.lastTrip) return;
-  var t=T(), tr=st.lastTrip;
-  var text=t.shareText+"\n";
-  text+="================\n";
-  text+=t.mStart+": "+fmtDateTime(tr.startTime)+"\n";
-  text+=t.mEnd+": "+fmtDateTime(tr.endTime)+"\n";
-  text+=t.mDur+": "+fmtTime(tr.duration)+"\n";
-  text+="\n";
-  text+=t.mCityKm+": "+tr.distZ1.toFixed(2)+" km\n";
-  text+=t.mOutKm+": "+tr.distZ2.toFixed(2)+" km\n";
-  text+=t.mTotalKm+": "+tr.distTotal.toFixed(2)+" km\n";
-  text+="\n";
-  text+=t.mStartFee+": "+tr.startFee.toFixed(2)+" zł\n";
-  if(tr.autoMode){
-    text+=t.mCityFare+": "+(tr.distZ1*tr.rate1).toFixed(2)+" zł\n";
-    text+=t.mOutFare+": "+(tr.distZ2*tr.rate2).toFixed(2)+" zł\n";
-  }else{
-    var f=tr.distTotal*tr.manualRate;
-    if(TARIFFS[tr.tariff].zone===1) text+=t.mCityFare+": "+f.toFixed(2)+" zł\n";
-    else text+=t.mOutFare+": "+f.toFixed(2)+" zł\n";
-  }
-  var waitMin=Math.floor(tr.waitSec/60);
-  text+=t.mWaitFare+": "+tr.waitFare.toFixed(2)+" zł ("+waitMin+" "+t.minShort+")\n";
-  text+="================\n";
-  text+=t.mTotalLbl+": "+tr.total.toFixed(2)+" zł\n";
-  text+=t.mTariff+": "+t.t[tr.tariff-1];
-
+  var t=T();
+  var text=buildReceiptText();
   if(navigator.share){
     navigator.share({title:t.receipt,text:text}).catch(function(){});
   }else{
-    // Fallback: copy to clipboard
     var ta=document.createElement("textarea");
     ta.value=text;document.body.appendChild(ta);ta.select();
     try{document.execCommand("copy");toast("📋 Copied to clipboard");}catch(e){}
@@ -897,60 +937,37 @@ function update(){
   $("rTot").textContent=total.toFixed(2)+" zł";
 }
 
-/* ===== SLIDE TO START/STOP IMPLEMENTATION ===== */
 (function(){
   var handle=$("sliderHandle"), wrap=$("sliderWrap");
   var dragging=false, startX=0, currentX=0, maxX=0;
-
   function getX(e){return e.touches?e.touches[0].clientX:e.clientX;}
-
   function pointerDown(e){
-    dragging=true;
-    startX=getX(e);
+    dragging=true;startX=getX(e);
     maxX=wrap.offsetWidth-handle.offsetWidth-10;
-    handle.style.transition="none";
-    e.preventDefault();
+    handle.style.transition="none";e.preventDefault();
   }
-
   function pointerMove(e){
     if(!dragging) return;
     var x=getX(e)-startX;
-    if(x<0) x=0;
-    if(x>maxX) x=maxX;
-    currentX=x;
-    handle.style.left=(5+x)+"px";
-    // Fade text as slider moves
-    var pct=x/maxX;
-    $("sliderText").style.opacity=Math.max(0,1-pct*1.5);
+    if(x<0) x=0;if(x>maxX) x=maxX;
+    currentX=x;handle.style.left=(5+x)+"px";
+    var pct=x/maxX;$("sliderText").style.opacity=Math.max(0,1-pct*1.5);
   }
-
   function pointerUp(e){
     if(!dragging) return;
     dragging=false;
     handle.style.transition="left .3s,background .3s";
     if(currentX>=maxX-5){
-      // Trigger action!
-      if(st.running) endTrip();
-      else startTrip();
-      // Reset slider position after action
-      setTimeout(function(){
-        handle.style.left="5px";
-        $("sliderText").style.opacity="1";
-      },200);
+      if(st.running) endTrip();else startTrip();
+      setTimeout(function(){handle.style.left="5px";$("sliderText").style.opacity="1";},200);
     }else{
-      // Snap back
-      handle.style.left="5px";
-      $("sliderText").style.opacity="1";
+      handle.style.left="5px";$("sliderText").style.opacity="1";
     }
     currentX=0;
   }
-
-  // Touch events
   handle.addEventListener("touchstart",pointerDown,{passive:false});
   document.addEventListener("touchmove",pointerMove,{passive:false});
   document.addEventListener("touchend",pointerUp);
-
-  // Mouse events (for desktop testing)
   handle.addEventListener("mousedown",pointerDown);
   document.addEventListener("mousemove",pointerMove);
   document.addEventListener("mouseup",pointerUp);
