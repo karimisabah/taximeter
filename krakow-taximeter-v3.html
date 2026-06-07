@@ -10,12 +10,11 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Kraków Taximeter</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
   :root{
     --bg:#05101f;--panel:#0d1e35;--panel2:#112240;--acc:#00e5ff;--acc2:#ff6b35;
     --green:#00ff88;--text:#e0f0ff;--muted:#4a6d8c;--border:rgba(0,229,255,.15);
-    --yellow:#ffcc00;--red:#ff4444;
+    --yellow:#ffcc00;--red:#ff4444;--purple:#a855f7;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);
@@ -60,7 +59,6 @@
 
   .ctx{background:var(--panel);border:1px solid var(--border);border-radius:14px;
     padding:12px 14px;font-size:11px;color:var(--muted);line-height:1.7}
-  .ctx b{color:var(--text);font-weight:700}
   .ctx .row{display:flex;justify-content:space-between;padding:2px 0}
   .ctx .val{color:var(--acc)}
   .ctx .val.zone1{color:var(--acc)}
@@ -110,9 +108,13 @@
     display:flex;gap:6px;pointer-events:none;color:var(--muted);font-size:18px;font-weight:900;opacity:.5}
   .slider-arrows.right{right:25px}
 
-  .reset{width:100%;padding:12px;border-radius:14px;cursor:pointer;
-    background:var(--panel2);border:1px solid var(--border);color:var(--muted);
-    font-size:13px;letter-spacing:2px;font-family:inherit;text-transform:uppercase;font-weight:700}
+  .action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .action-btn{padding:14px;border-radius:14px;cursor:pointer;font-size:12px;
+    letter-spacing:1px;font-family:inherit;text-transform:uppercase;font-weight:700;border:none}
+  .btn-reset{background:var(--panel2);border:1px solid var(--border);color:var(--muted)}
+  .btn-receipt{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;
+    box-shadow:0 4px 15px rgba(168,85,247,.3)}
+  .btn-receipt:disabled{background:var(--panel2);color:var(--muted);box-shadow:none;cursor:not-allowed;opacity:.5}
 
   .row2{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
   .row2 .rl{color:var(--muted)}.row2 .rv{color:var(--acc);font-weight:700}
@@ -129,7 +131,6 @@
     padding:10px 14px;font-size:11px;color:var(--yellow);line-height:1.5;display:none}
   .warn.show{display:block}
 
-  /* MODAL */
   .modal-bg{position:fixed;inset:0;background:rgba(0,5,15,.85);z-index:1000;
     display:none;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;
     backdrop-filter:blur(4px)}
@@ -144,14 +145,17 @@
     border-radius:12px;border:1px solid var(--border)}
   .receipt-section h3{font-size:10px;color:var(--muted);letter-spacing:2px;
     margin-bottom:10px;text-transform:uppercase}
-  .rline{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
-  .rline .rk{color:var(--muted)}
-  .rline .rv{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+  .rline{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;gap:10px}
+  .rline .rk{color:var(--muted);flex-shrink:0}
+  .rline .rv{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;text-align:right;word-break:break-word}
   .rline .rv.green{color:var(--green)}
   .rline .rv.yellow{color:var(--yellow)}
+  .rline .rv.small{font-size:11px;font-weight:400}
   .rline.bold{padding-top:10px;border-top:1px solid var(--border);margin-top:6px;font-size:15px}
   .rline.bold .rk{color:var(--text);font-weight:700}
   .rline.bold .rv{color:var(--green);font-weight:900;font-size:18px}
+  .rline.col{flex-direction:column;gap:4px;align-items:flex-start}
+  .rline.col .rv{text-align:left}
   .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
   .modal-actions button{padding:14px;border-radius:12px;border:none;font-size:13px;
     font-weight:700;cursor:pointer;letter-spacing:1px;font-family:inherit}
@@ -164,12 +168,14 @@
     text-shadow:0 0 20px rgba(0,255,136,.4);font-variant-numeric:tabular-nums;letter-spacing:-1px}
   .total-big .c{font-size:12px;color:var(--muted);margin-top:4px}
 
-  /* QR CODE SECTION */
   .qr-section{margin:14px 0;padding:20px;background:#fff;border-radius:16px;text-align:center}
   .qr-section h3{font-size:11px;color:#333;letter-spacing:2px;margin-bottom:12px;
     text-transform:uppercase;font-weight:700}
-  .qr-section .qr-canvas{display:inline-block;background:#fff;padding:8px;border-radius:8px}
-  .qr-section canvas{display:block;max-width:100%;height:auto}
+  .qr-img{display:inline-block;background:#fff;padding:8px;border-radius:8px;
+    min-height:240px;min-width:240px}
+  .qr-img img{display:block;max-width:100%;height:auto;width:240px;height:240px}
+  .qr-loading{display:flex;align-items:center;justify-content:center;
+    width:240px;height:240px;font-size:12px;color:#999}
   .qr-section .qr-hint{font-size:10px;color:#666;margin-top:10px;line-height:1.5}
   .qr-section .qr-id{font-size:9px;color:#999;margin-top:6px;font-family:monospace;letter-spacing:1px}
 </style>
@@ -243,7 +249,10 @@
     <div class="slider-handle" id="sliderHandle">▶</div>
   </div>
 
-  <button class="reset" id="resetBtn" onclick="resetTrip()">↺ RESET</button>
+  <div class="action-row">
+    <button class="action-btn btn-reset" id="resetBtn" onclick="resetTrip()">↺ RESET</button>
+    <button class="action-btn btn-receipt" id="receiptBtn" onclick="showReceipt()" disabled>🧾 RECEIPT</button>
+  </div>
 
   <div class="section">
     <div class="title"><span id="detailsTitle">DETAILS</span></div>
@@ -275,6 +284,12 @@
     </div>
 
     <div class="receipt-section">
+      <h3 id="modalRouteTitle">📍 Route</h3>
+      <div class="rline col"><span class="rk" id="modalFromLbl">🟢 From</span><span class="rv small" id="modalFromAddr">—</span></div>
+      <div class="rline col"><span class="rk" id="modalToLbl">🔴 To</span><span class="rv small" id="modalToAddr">—</span></div>
+    </div>
+
+    <div class="receipt-section">
       <h3 id="modalDistTitle">📏 Distance</h3>
       <div class="rline"><span class="rk" id="modalCityKmLbl">City (Zone I)</span><span class="rv" id="modalCityKm">0.00 km</span></div>
       <div class="rline"><span class="rk" id="modalOutKmLbl">Outside (Zone II)</span><span class="rv yellow" id="modalOutKm">0.00 km</span></div>
@@ -297,10 +312,11 @@
       <div class="rline"><span class="rk" id="modalTariffLbl2">Tariff used</span><span class="rv" id="modalTariff">—</span></div>
     </div>
 
-    <!-- QR CODE -->
     <div class="qr-section">
       <h3 id="qrTitle">📱 SCAN TO GET RECEIPT</h3>
-      <div class="qr-canvas"><canvas id="qrCanvas"></canvas></div>
+      <div class="qr-img" id="qrBox">
+        <div class="qr-loading">Loading QR...</div>
+      </div>
       <div class="qr-hint" id="qrHint">Passenger: scan with phone camera to receive trip details</div>
       <div class="qr-id" id="qrId">—</div>
     </div>
@@ -330,10 +346,10 @@ var L={
     t:["Tariff 1","Tariff 2","Tariff 3","Tariff 4"],
     td:["Weekdays 6:00–22:00 · Zone I","Night/Sun/Holiday · Zone I","Weekdays 6:00–22:00 · Zone II","Night/Sun/Holiday · Zone II"],
     slideStart:"SLIDE TO START", slideStop:"SLIDE TO END",
-    reset:"↺ RESET",
+    reset:"↺ RESET", receiptBtn:"🧾 RECEIPT",
     rStart:"🚀 Start fee", rZ1:"📏 City (km)", rZ2:"📏 Outside city (km)", rWait:"⏱ Waiting", rTot:"💰 Total",
-    started:"▶ Trip started", ended:"✓ Trip ended", resetMsg:"↺ Reset done",
-    stopFirst:"End the trip first",
+    started:"▶ Trip started", ended:"✓ Trip ended · ", resetMsg:"↺ Reset done",
+    stopFirst:"End the trip first", noReceipt:"No trip yet",
     autoOn:"AUTO ON", autoOff:"MANUAL",
     autoModeOn:"⚡ Auto mode: tariff selected automatically",
     autoModeOff:"✋ Manual mode: you choose the tariff",
@@ -346,12 +362,10 @@ var L={
     enteredZ2:"🛫 Left city — Tariff switched",
     enteredZ1:"🏙️ Entered city — Tariff switched",
     holidayWarn:"⚠ Today is a Polish public holiday",
-    autoHint:"⚡ AUTO MODE",
-    manualHint:"✋ MANUAL MODE",
-    receipt:"🧾 TRIP RECEIPT",
-    receiptSub:"Kraków Taximeter",
-    mTime:"⏰ Time",
-    mStart:"Start", mEnd:"End", mDur:"Duration",
+    autoHint:"⚡ AUTO MODE", manualHint:"✋ MANUAL MODE",
+    receipt:"🧾 TRIP RECEIPT", receiptSub:"Kraków Taximeter",
+    mTime:"⏰ Time", mStart:"Start", mEnd:"End", mDur:"Duration",
+    mRoute:"📍 Route", mFrom:"🟢 From (pickup)", mTo:"🔴 To (dropoff)",
     mDist:"📏 Distance",
     mCityKm:"City (Zone I)", mOutKm:"Outside (Zone II)", mTotalKm:"Total distance",
     mFare:"💰 Fare breakdown",
@@ -364,7 +378,8 @@ var L={
     minShort:"min", shareText:"Kraków Taxi Receipt",
     qrTitle:"📱 SCAN TO GET RECEIPT",
     qrHint:"Passenger: scan with phone camera to receive trip details",
-    qrTripId:"Trip ID"
+    qrTripId:"Trip ID",
+    locating:"Locating..."
   },
   pl:{
     sub:"Oficjalny taksometr Krakowa", fareLbl:"CAŁKOWITA OPŁATA",
@@ -380,10 +395,10 @@ var L={
     t:["Taryfa 1","Taryfa 2","Taryfa 3","Taryfa 4"],
     td:["Dni robocze 6:00–22:00 · Strefa I","Noc/Niedz./Święta · Strefa I","Dni robocze 6:00–22:00 · Strefa II","Noc/Niedz./Święta · Strefa II"],
     slideStart:"PRZESUŃ ABY ROZPOCZĄĆ", slideStop:"PRZESUŃ ABY ZAKOŃCZYĆ",
-    reset:"↺ RESETUJ",
+    reset:"↺ RESETUJ", receiptBtn:"🧾 RACHUNEK",
     rStart:"🚀 Opłata startowa", rZ1:"📏 Miasto (km)", rZ2:"📏 Poza miastem (km)", rWait:"⏱ Postój", rTot:"💰 Razem",
-    started:"▶ Przejazd rozpoczęty", ended:"✓ Przejazd zakończony", resetMsg:"↺ Zresetowano",
-    stopFirst:"Najpierw zakończ przejazd",
+    started:"▶ Przejazd rozpoczęty", ended:"✓ Przejazd zakończony · ", resetMsg:"↺ Zresetowano",
+    stopFirst:"Najpierw zakończ przejazd", noReceipt:"Brak przejazdu",
     autoOn:"AUTO WŁ.", autoOff:"RĘCZNY",
     autoModeOn:"⚡ Tryb auto: taryfa wybierana automatycznie",
     autoModeOff:"✋ Tryb ręczny: wybierz taryfę sam",
@@ -396,12 +411,10 @@ var L={
     enteredZ2:"🛫 Wyjazd z miasta — zmiana taryfy",
     enteredZ1:"🏙️ Wjazd do miasta — zmiana taryfy",
     holidayWarn:"⚠ Dziś jest święto państwowe",
-    autoHint:"⚡ TRYB AUTO",
-    manualHint:"✋ TRYB RĘCZNY",
-    receipt:"🧾 RACHUNEK ZA PRZEJAZD",
-    receiptSub:"Taksometr Krakowa",
-    mTime:"⏰ Czas",
-    mStart:"Początek", mEnd:"Koniec", mDur:"Czas trwania",
+    autoHint:"⚡ TRYB AUTO", manualHint:"✋ TRYB RĘCZNY",
+    receipt:"🧾 RACHUNEK ZA PRZEJAZD", receiptSub:"Taksometr Krakowa",
+    mTime:"⏰ Czas", mStart:"Początek", mEnd:"Koniec", mDur:"Czas trwania",
+    mRoute:"📍 Trasa", mFrom:"🟢 Skąd (start)", mTo:"🔴 Dokąd (koniec)",
     mDist:"📏 Odległość",
     mCityKm:"Miasto (Strefa I)", mOutKm:"Poza miastem (Strefa II)", mTotalKm:"Łącznie",
     mFare:"💰 Wyliczenie opłat",
@@ -414,7 +427,8 @@ var L={
     minShort:"min", shareText:"Rachunek za taksówkę Kraków",
     qrTitle:"📱 ZESKANUJ ABY OTRZYMAĆ RACHUNEK",
     qrHint:"Pasażer: zeskanuj telefonem aby otrzymać szczegóły przejazdu",
-    qrTripId:"ID przejazdu"
+    qrTripId:"ID przejazdu",
+    locating:"Pobieranie lokalizacji..."
   }
 };
 var lang="en";
@@ -483,12 +497,48 @@ function detectTariffForZone(zone){
   return isSpecial?4:3;
 }
 
+/* ===== REVERSE GEOCODING ===== */
+function reverseGeocode(lat,lng,callback){
+  // Use OpenStreetMap Nominatim free API
+  var url="https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng+"&zoom=16&addressdetails=1&accept-language="+lang;
+  var xhr=new XMLHttpRequest();
+  xhr.open("GET",url,true);
+  xhr.timeout=8000;
+  xhr.onload=function(){
+    if(xhr.status===200){
+      try{
+        var data=JSON.parse(xhr.responseText);
+        var addr=data.address||{};
+        // Build a short address: road + suburb/neighbourhood + city
+        var parts=[];
+        if(addr.road) parts.push(addr.road+(addr.house_number?" "+addr.house_number:""));
+        var area=addr.suburb||addr.neighbourhood||addr.quarter||addr.city_district||addr.village||addr.town;
+        if(area) parts.push(area);
+        if(addr.city||addr.town||addr.village){
+          var city=addr.city||addr.town||addr.village;
+          if(parts.indexOf(city)===-1) parts.push(city);
+        }
+        var result=parts.length>0?parts.join(", "):(data.display_name||(lat.toFixed(5)+", "+lng.toFixed(5)));
+        callback(result);
+      }catch(e){
+        callback(lat.toFixed(5)+", "+lng.toFixed(5));
+      }
+    }else{
+      callback(lat.toFixed(5)+", "+lng.toFixed(5));
+    }
+  };
+  xhr.onerror=function(){callback(lat.toFixed(5)+", "+lng.toFixed(5));};
+  xhr.ontimeout=function(){callback(lat.toFixed(5)+", "+lng.toFixed(5));};
+  xhr.send();
+}
+
 var st={
   running:false, autoMode:true, tariff:1, currentZone:1,
   dist:0, distZ1:0, distZ2:0, distFare:0, waitFare:0,
   elapsed:0, waitSeconds:0, speed:0, lastPos:null, lastFixTime:0,
   watchId:null, timer:null, wakeLock:null,
   startTimestamp:0, endTimestamp:0, lastTickTime:0,
+  startPos:null, endPos:null, startAddr:null, endAddr:null,
   lastTrip:null
 };
 
@@ -496,7 +546,7 @@ function $(id){return document.getElementById(id);}
 function T(){return L[lang];}
 
 function toast(m){var t=$("toast");t.textContent=m;t.classList.add("show");
-  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},2800);}
+  clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove("show");},3500);}
 
 function haversine(a1,o1,a2,o2){
   var R=6371,dLat=(a2-a1)*Math.PI/180,dLon=(o2-o1)*Math.PI/180;
@@ -516,7 +566,6 @@ function fmtDateTime(ts){
 }
 
 function genTripId(){
-  // short unique ID based on timestamp + random
   var t=Date.now().toString(36).toUpperCase();
   var r=Math.random().toString(36).substring(2,5).toUpperCase();
   return "KRK-"+t.slice(-6)+"-"+r;
@@ -546,6 +595,7 @@ function setLang(l){
   $("tariffTitle").textContent=t.tariffTitle;
   $("detailsTitle").textContent=t.detailsTitle;
   $("resetBtn").textContent=t.reset;
+  $("receiptBtn").textContent=t.receiptBtn;
   $("rStartLbl").textContent=t.rStart;
   $("rZone1Lbl").textContent=t.rZ1;
   $("rZone2Lbl").textContent=t.rZ2;
@@ -567,6 +617,9 @@ function setLang(l){
   $("modalStartLbl").textContent=t.mStart;
   $("modalEndLbl").textContent=t.mEnd;
   $("modalDurLbl").textContent=t.mDur;
+  $("modalRouteTitle").textContent=t.mRoute;
+  $("modalFromLbl").textContent=t.mFrom;
+  $("modalToLbl").textContent=t.mTo;
   $("modalDistTitle").textContent=t.mDist;
   $("modalCityKmLbl").textContent=t.mCityKm;
   $("modalOutKmLbl").textContent=t.mOutKm;
@@ -689,6 +742,14 @@ function onPos(pos){
     if(st.autoMode) applyAutoTariff();
     updateContext();
   }
+  // Capture start position on first good fix
+  if(st.running && !st.startPos && c.accuracy<50){
+    st.startPos={lat:c.latitude,lng:c.longitude};
+    // Reverse geocode in background
+    reverseGeocode(c.latitude,c.longitude,function(addr){
+      st.startAddr=addr;
+    });
+  }
   if(st.running&&st.lastPos&&movedDist>0.004&&movedDist<0.8&&c.accuracy<40){
     st.dist+=movedDist;
     if(st.currentZone===1) st.distZ1+=movedDist;
@@ -751,6 +812,8 @@ function startTrip(){
   st.lastPos=null;st.lastFixTime=Date.now();
   st.startTimestamp=Date.now();st.lastTickTime=Date.now();
   st.endTimestamp=0;
+  st.startPos=null;st.endPos=null;
+  st.startAddr=t.locating;st.endAddr=null;
   if(st.autoMode) applyAutoTariff();
   startGps();
   st.timer=setInterval(tick,1000);
@@ -768,6 +831,16 @@ function startTrip(){
 function endTrip(){
   var t=T();
   st.endTimestamp=Date.now();
+  // Capture end position from last GPS fix
+  if(st.lastPos){
+    st.endPos={lat:st.lastPos.lat,lng:st.lastPos.lng};
+    st.endAddr=t.locating;
+    reverseGeocode(st.lastPos.lat,st.lastPos.lng,function(addr){
+      st.endAddr=addr;
+      // If trip is still saved, update its addr too
+      if(st.lastTrip) st.lastTrip.endAddr=addr;
+    });
+  }
   st.lastTrip={
     id:genTripId(),
     startTime:st.startTimestamp,
@@ -785,7 +858,11 @@ function endTrip(){
     autoMode:st.autoMode,
     rate1:TARIFFS[detectTariffForZone(1)].rate,
     rate2:TARIFFS[detectTariffForZone(2)].rate,
-    manualRate:TARIFFS[st.tariff].rate
+    manualRate:TARIFFS[st.tariff].rate,
+    startPos:st.startPos,
+    endPos:st.endPos,
+    startAddr:st.startAddr,
+    endAddr:st.endAddr
   };
   st.running=false;
   clearInterval(st.timer);
@@ -798,8 +875,10 @@ function endTrip(){
   $("sliderHandle").textContent="▶";
   $("amt").classList.remove("run");
   setMode(false);
-  toast(t.ended);
-  showReceipt();
+  // Enable receipt button
+  $("receiptBtn").disabled=false;
+  // Show only a toast, NOT the receipt automatically
+  toast(t.ended+st.lastTrip.total.toFixed(2)+" zł");
 }
 
 function buildReceiptText(){
@@ -812,6 +891,9 @@ function buildReceiptText(){
   text+=t.mStart+": "+fmtDateTime(tr.startTime)+"\n";
   text+=t.mEnd+": "+fmtDateTime(tr.endTime)+"\n";
   text+=t.mDur+": "+fmtTime(tr.duration)+"\n";
+  text+="\n";
+  if(tr.startAddr) text+=t.mFrom+": "+tr.startAddr+"\n";
+  if(tr.endAddr) text+=t.mTo+": "+tr.endAddr+"\n";
   text+="\n";
   text+=t.mCityKm+": "+tr.distZ1.toFixed(2)+" km\n";
   text+=t.mOutKm+": "+tr.distZ2.toFixed(2)+" km\n";
@@ -836,13 +918,20 @@ function buildReceiptText(){
 }
 
 function showReceipt(){
-  if(!st.lastTrip) return;
-  var t=T(), tr=st.lastTrip;
+  var t=T();
+  if(!st.lastTrip){
+    toast(t.noReceipt);
+    return;
+  }
+  var tr=st.lastTrip;
 
   $("modalTotal").textContent=tr.total.toFixed(2);
   $("modalStartTime").textContent=fmtDateTime(tr.startTime);
   $("modalEndTime").textContent=fmtDateTime(tr.endTime);
   $("modalDuration").textContent=fmtTime(tr.duration);
+
+  $("modalFromAddr").textContent=tr.startAddr||(tr.startPos?tr.startPos.lat.toFixed(5)+", "+tr.startPos.lng.toFixed(5):"—");
+  $("modalToAddr").textContent=tr.endAddr||(tr.endPos?tr.endPos.lat.toFixed(5)+", "+tr.endPos.lng.toFixed(5):"—");
 
   $("modalCityKm").textContent=tr.distZ1.toFixed(2)+" km";
   $("modalOutKm").textContent=tr.distZ2.toFixed(2)+" km";
@@ -868,17 +957,11 @@ function showReceipt(){
   $("modalTariff").textContent=t.t[tr.tariff-1]+" · "+TARIFFS[tr.tariff].rate.toFixed(2)+" zł/km";
   $("qrId").textContent=t.qrTripId+": "+tr.id;
 
-  // Generate QR code with full receipt text
+  // Generate QR via qrserver.com (simple image API)
   var qrText=buildReceiptText();
-  var canvas=$("qrCanvas");
-  if(window.QRCode){
-    QRCode.toCanvas(canvas, qrText, {
-      width:240, margin:1, errorCorrectionLevel:'M',
-      color:{dark:'#000000', light:'#ffffff'}
-    }, function(err){
-      if(err) console.error("QR error",err);
-    });
-  }
+  var encoded=encodeURIComponent(qrText);
+  var qrUrl="https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data="+encoded;
+  $("qrBox").innerHTML='<img src="'+qrUrl+'" alt="QR" width="240" height="240" onerror="this.parentNode.innerHTML=\'<div class=qr-loading>QR unavailable (offline)</div>\'">';
 
   $("modalBg").classList.add("show");
 }
